@@ -17,8 +17,10 @@ if "ceo" in res:
     ceo, plan_b = res["ceo"], (res["finalistas"][1] if len(res["finalistas"]) > 1 else None)
     with st.container(border=True):
         a, b, c = st.columns([2, 2, 1.2], vertical_alignment="center")
-        a.metric("CEO recomendado", ceo["nombre"])
-        b.metric("Plan B", plan_b["nombre"] if plan_b else "—")
+        a.caption("CEO recomendado")  # texto en vez de st.metric para que el nombre no se corte en pantallas angostas
+        a.markdown(f"### {ceo['nombre']}")
+        b.caption("Plan B")
+        b.markdown(f"### {plan_b['nombre'] if plan_b else '—'}")
         c.page_link("paginas/recomendacion.py", label="Ver el informe", icon=":material/arrow_forward:")
 
 st.subheader("Primero entender a la empresa, después buscar")

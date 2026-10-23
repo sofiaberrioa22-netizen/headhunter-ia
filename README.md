@@ -4,6 +4,8 @@ Proyecto del curso **Fundamentos de Inteligencia Artificial**. La app hace el tr
 empresa, evalúa candidatos reales y recomienda al líder que mejor puede sacarla adelante. El caso es **Intel**, que se
 quedó atrás frente a NVIDIA.
 
+**App en línea:** https://headhunter-ia-intel.streamlit.app/
+
 **Integrantes:** María Adelaida Restrepo, Juanita Arenas, Michelle Ruiz, Sofía Berrío y Jerónimo Morales.
 
 ## Flujo de la app
