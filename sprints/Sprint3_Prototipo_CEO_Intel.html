@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Headhunter IA — Intel</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0f1c; --panel:#111a2e; --panel2:#0d1526; --line:#23314f; --text:#e6ebf5; --muted:#93a0b8; --dim:#5f6d88;
+  --sky:#38bdf8; --em:#34d399; --amb:#fbbf24; --rose:#fb7185; --vio:#a78bfa; --ora:#fb923c;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;font-size:14px;line-height:1.5}
+a{color:var(--sky)}
+.wrap{max-width:1240px;margin:0 auto;padding:0 16px}
+header.top{border-bottom:1px solid var(--line);padding:28px 0 20px;background:linear-gradient(180deg,#0f1a33 0%,var(--bg) 100%)}
+.eyebrow{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.pill{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:3px 10px;border-radius:999px;border:1px solid}
+.pill.sky{color:var(--sky);border-color:#38bdf855;background:#38bdf812}
+.pill.em{color:var(--em);border-color:#34d39955;background:#34d39912}
+.pill.amb{color:var(--amb);border-color:#fbbf2455;background:#fbbf2412}
+.pill.rose{color:var(--rose);border-color:#fb718555;background:#fb718512}
+.pill.vio{color:var(--vio);border-color:#a78bfa55;background:#a78bfa12}
+.pill.dim{color:var(--muted);border-color:var(--line);background:#ffffff06}
+h1{font-size:30px;font-weight:800;margin:0 0 4px;letter-spacing:-.02em}
+h2{font-size:20px;font-weight:700;margin:0}
+h3{font-size:14px;font-weight:700;margin:0 0 8px;color:var(--text)}
+.sub{color:var(--muted);margin:0}
+nav.steps{position:sticky;top:0;z-index:20;background:#0a0f1ccc;backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+nav.steps .wrap{display:flex;gap:6px;overflow-x:auto;padding:10px 16px;scrollbar-width:none}
+nav.steps a{flex:0 0 auto;text-decoration:none;color:var(--muted);font-size:12px;font-weight:600;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);white-space:nowrap}
+nav.steps a.done{color:var(--em);border-color:#34d39955}
+nav.steps a:hover{color:var(--text)}
+main{padding:24px 0 60px;display:flex;flex-direction:column;gap:24px}
+section.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:22px;scroll-margin-top:60px}
+.head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:18px;flex-wrap:wrap}
+.head .l{display:flex;gap:12px;align-items:flex-start}
+.num{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex:0 0 auto}
+.num.sky{background:#38bdf822;color:var(--sky)} .num.em{background:#34d39922;color:var(--em)} .num.amb{background:#fbbf2422;color:var(--amb)}
+.num.ora{background:#fb923c22;color:var(--ora)} .num.vio{background:#a78bfa22;color:var(--vio)} .num.rose{background:#fb718522;color:var(--rose)}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media(max-width:900px){.g3,.g4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:640px){.g2,.g3,.g4{grid-template-columns:1fr} h1{font-size:24px} section.card{padding:16px}}
+.box{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:16px;min-width:0}
+.kpi .v{font-size:24px;font-weight:800;letter-spacing:-.02em}
+.kpi .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:600}
+.kpi .s{font-size:12px;color:var(--dim)}
+.label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px}
+input[type=text],input[type=password],select,textarea{width:100%;background:#070b16;border:1px solid var(--line);border-radius:10px;color:var(--text);padding:10px 12px;font:inherit;font-size:13px}
+textarea{resize:vertical}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--sky)}
+button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--text);padding:10px 16px;font-weight:700;font-size:13px}
+button:hover{border-color:var(--sky)}
+button.primary{background:linear-gradient(90deg,#38bdf8,#34d399);color:#04121f;border:none}
+button.primary:hover{filter:brightness(1.1)}
+button:disabled{opacity:.5;cursor:not-allowed}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+ul.clean{margin:0;padding-left:18px} ul.clean li{margin:3px 0;color:#cfd6e4}
+.muted{color:var(--muted)} .dim{color:var(--dim)} .small{font-size:12px} .xs{font-size:11px}
+.mono{font-family:'JetBrains Mono',monospace}
+.ok{color:var(--em);font-weight:700} .bad{color:var(--rose);font-weight:700} .warn{color:var(--amb);font-weight:700}
+.chart{position:relative;height:280px}
+.chart.tall{height:340px}
+.chart.short{height:220px}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{text-align:left;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.05em;padding:9px 10px;border-bottom:1px solid var(--line);background:#0b1222}
+td{padding:9px 10px;border-bottom:1px solid #1a2540;vertical-align:top}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
+.chip{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:6px;margin:1px 2px 1px 0;font-family:'JetBrains Mono',monospace}
+.chip.ok{background:#34d39918;color:var(--em);border:1px solid #34d39944}
+.chip.w{background:#fbbf2418;color:var(--amb);border:1px solid #fbbf2444}
+.chip.n{background:#ffffff08;color:var(--dim);border:1px solid var(--line)}
+.badge{font-size:11px;font-weight:800;padding:3px 9px;border-radius:7px}
+.badge.ok{background:#34d39918;color:var(--em);border:1px solid #34d39955}
+.badge.bad{background:#fb718518;color:var(--rose);border:1px solid #fb718555}
+.cands{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.cand{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px;cursor:pointer;transition:.15s;text-align:left}
+.cand:hover{border-color:var(--sky)}
+.cand.sel{border-color:var(--sky);box-shadow:0 0 0 1px var(--sky) inset}
+.cand .n{font-weight:800;font-size:14px}
+.cand .c{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.35}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:middle}
+.slider{display:grid;grid-template-columns:120px 1fr 48px;gap:10px;align-items:center;margin:6px 0;font-size:12px}
+.slider input{width:100%;accent-color:var(--sky)}
+.slider .val{font-family:'JetBrains Mono',monospace;color:var(--sky);text-align:right}
+.genes{display:flex;gap:6px;flex-wrap:wrap}
+.gene{border:1px solid var(--line);border-radius:10px;padding:8px 10px;min-width:92px;background:#070b16}
+.gene .k{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.gene .v{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:15px}
+.bars4{display:flex;gap:3px;margin-top:4px}.bars4 i{flex:1;height:6px;border-radius:2px;background:#1e2a45}.bars4 i.on{background:var(--ora)}
+.log{background:#070b16;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#a9b4c9;max-height:150px;overflow:auto;white-space:pre-wrap}
+.matrix td,.matrix th{text-align:center}
+.matrix td.nash{background:#34d39922;outline:1px solid #34d39977;font-weight:800;color:var(--em)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.tabs button{padding:6px 12px;font-size:12px}
+.tabs button.on{border-color:var(--vio);color:var(--vio)}
+.winner{background:linear-gradient(135deg,#0f2a2a 0%,#111a2e 60%);border:1px solid #34d39966;border-radius:16px;padding:20px}
+.winner .name{font-size:28px;font-weight:800;letter-spacing:-.02em}
+.notice{font-size:12px;color:var(--muted);border-left:3px solid var(--amb);padding:6px 10px;background:#fbbf240a;border-radius:0 8px 8px 0}
+.hidden{display:none !important}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid #ffffff33;border-top-color:var(--sky);border-radius:50%;animation:sp 1s linear infinite;vertical-align:middle}
+@keyframes sp{to{transform:rotate(360deg)}}
+.locked{opacity:.35;pointer-events:none;filter:grayscale(.6)}
+svg text{font-family:Inter,sans-serif}
+footer{color:var(--dim);font-size:11.5px;border-top:1px solid var(--line);padding:18px 0 40px}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div class="eyebrow">
+      <span class="pill sky">Fundamentos de IA · Sprint 3</span>
+      <span class="pill em">LLM + Sistema experto + Algoritmo genético + Teoría de juegos</span>
+    </div>
+    <h1>Headhunter IA: el próximo CEO de Intel</h1>
+    <p class="sub">Prototipo interactivo del pipeline del notebook Sprint 3. Todo el cálculo corre en tu navegador.</p>
+  </div>
+</header>
+
+<nav class="steps"><div class="wrap">
+  <a href="#p0" id="nav-p0">0 · Análisis LLM</a>
+  <a href="#cands" id="nav-cands">Candidatos</a>
+  <a href="#p1" id="nav-p1">1 · Sistema experto</a>
+  <a href="#p3" id="nav-p3">2 · Algoritmo genético</a>
+  <a href="#p4" id="nav-p4">3 · Teoría de juegos</a>
+  <a href="#dec" id="nav-dec">Decisión</a>
+  <a href="#final" id="nav-final">4 · Informe final</a>
+</div></nav>
+
+<main class="wrap">
+
+<!-- ============================ PASO 0 ============================ -->
+<section class="card" id="p0">
+  <div class="head">
+    <div class="l"><div class="num sky">0</div><div>
+      <h2>Paso 0 — Analista de la industria (LLM externo)</h2>
+      <p class="sub small">Se envía al LLM un dossier de hechos verificados. El LLM devuelve un JSON con el diagnóstico, la estrategia, los requisitos y los pesos.</p>
+    </div></div>
+    <span id="badge-p0" class="pill dim">En espera</span>
+  </div>
+
+  <div class="grid g4" style="margin-bottom:16px">
+    <div class="box kpi"><div class="l">Ingresos Q2 2026 · Intel</div><div class="v" style="color:var(--sky)">US$16,1 B</div><div class="s">+25% interanual · margen bruto 40,4%</div></div>
+    <div class="box kpi"><div class="l">Ingresos trim. · NVIDIA</div><div class="v" style="color:var(--em)">US$96,2 B</div><div class="s">Q2 FY2027 (+106%) · margen 75%</div></div>
+    <div class="box kpi"><div class="l">CPU x86 servidores · AMD</div><div class="v" style="color:var(--rose)">46,2%</div><div class="s">de los ingresos (Q1 2026)</div></div>
+    <div class="box kpi"><div class="l">Foundry 14A</div><div class="v" style="color:var(--amb)">0</div><div class="s">clientes externos con volumen firmado</div></div>
+  </div>
+
+  <div class="grid g2" style="margin-bottom:16px">
+    <div class="box"><h3>Brecha Intel vs. NVIDIA (último trimestre reportado)</h3><div class="chart short"><canvas id="chIntelNvidia"></canvas></div></div>
+    <div class="box">
+      <h3>Dossier que se envía al LLM</h3>
+      <p class="small muted" style="margin:0 0 8px"><b style="color:var(--text)">CEO actual:</b> Lip-Bu Tan (desde marzo de 2025). Fue CEO de Cadence (2009–2021). Recortó costos, vendió el 51% de Altera y atrajo capital del Gobierno de EE. UU. (~10%), de NVIDIA (US$5.000 M) y de SoftBank (US$2.000 M).</p>
+      <p class="small muted" style="margin:0 0 8px"><b style="color:var(--text)">CEO anterior:</b> Pat Gelsinger (2021–2024). Lanzó IDM 2.0 y construyó fábricas sin clientes externos. Llegó tarde a la IA. En 2024 Intel perdió ~US$18.700 M. Fue removido por la junta.</p>
+      <p class="small muted" style="margin:0"><b style="color:var(--text)">Mercado:</b> demanda explosiva de cómputo de IA, chips a medida de los hiperescaladores, soberanía tecnológica (CHIPS Act), avance de Arm y escasez de empaquetado avanzado.</p>
+    </div>
+  </div>
+
+  <div class="grid g2">
+    <div class="box">
+      <h3>Opción A — Consultar Gemini en vivo</h3>
+      <label class="label" for="apikey">API key de Gemini (no se guarda)</label>
+      <input type="password" id="apikey" placeholder="AIza..." autocomplete="off">
+      <label class="label" for="extra" style="margin-top:10px">Contexto adicional para el LLM (opcional)</label>
+      <textarea id="extra" rows="2" placeholder="Ej.: la junta prioriza no tener conflictos de interés..."></textarea>
+      <div class="row" style="margin-top:10px">
+        <button id="btn-live" class="primary">Consultar Gemini</button>
+        <span id="live-status" class="small muted"></span>
+      </div>
+    </div>
+    <div class="box">
+      <h3>Opción B — Usar el análisis de demostración</h3>
+      <p class="small muted" style="margin-top:0">Es una respuesta del LLM ya guardada, con el mismo formato JSON del notebook. Sirve para presentar el prototipo sin conexión ni API key.</p>
+      <button id="btn-demo">Cargar análisis de demostración</button>
+      <div id="log-llm" class="log" style="margin-top:12px">Esperando…</div>
+    </div>
+  </div>
+
+  <div id="p0-report" class="hidden" style="margin-top:18px">
+    <div class="box" style="margin-bottom:16px">
+      <div class="row" style="justify-content:space-between"><h3 style="margin:0">Diagnóstico</h3><span id="tipo-crisis" class="pill amb"></span></div>
+      <p id="diag-resumen" class="small" style="color:#cfd6e4"></p>
+      <div class="grid g4">
+        <div><span class="label" style="color:var(--em)">Fortalezas</span><ul class="clean small" id="f-fort"></ul></div>
+        <div><span class="label" style="color:var(--rose)">Debilidades</span><ul class="clean small" id="f-deb"></ul></div>
+        <div><span class="label" style="color:var(--sky)">Oportunidades</span><ul class="clean small" id="f-opo"></ul></div>
+        <div><span class="label" style="color:var(--amb)">Amenazas</span><ul class="clean small" id="f-ame"></ul></div>
+      </div>
+    </div>
+    <div class="grid g2" style="margin-bottom:16px">
+      <div class="box"><h3 id="ceo-actual-t">CEO actual</h3>
+        <span class="label" style="color:var(--em)">Aciertos</span><ul class="clean small" id="ceo-aci"></ul>
+        <span class="label" style="color:var(--rose);margin-top:8px">Limitaciones</span><ul class="clean small" id="ceo-lim"></ul>
+        <p class="small" style="margin-bottom:0"><b>¿Por qué un cambio?</b> <span id="ceo-por" class="muted"></span></p>
+      </div>
+      <div class="box"><h3 id="ceo-ant-t">Legado del CEO anterior</h3><ul class="clean small" id="ceo-leg"></ul>
+        <span class="label" style="margin-top:12px">Problemática central</span><p id="problematica" class="small" style="margin:0;color:#cfd6e4"></p>
+      </div>
+    </div>
+    <div class="box" style="margin-bottom:16px;border-color:#38bdf855">
+      <span class="label" style="color:var(--sky)">Nueva estrategia de reclutamiento</span>
+      <h3 id="est-nombre" style="font-size:18px"></h3>
+      <div class="grid g3">
+        <div><span class="label">Pilares</span><ul class="clean small" id="est-pil"></ul></div>
+        <div><span class="label">Preguntas clave de entrevista</span><ul class="clean small" id="est-preg"></ul></div>
+        <div><span class="label">Señales de alerta</span><ul class="clean small" id="est-alert"></ul></div>
+      </div>
+      <p class="small" style="margin-bottom:0"><b>Perfil ideal:</b> <span id="est-perfil" class="muted"></span></p>
+    </div>
+    <div class="grid g3">
+      <div class="box"><h3>Requisitos rígidos → Paso 1</h3><div id="sl-req"></div></div>
+      <div class="box"><h3>Pesos de los criterios → Paso 2</h3><div id="sl-pesos"></div><p class="xs dim" style="margin:6px 0 0">Se normalizan para sumar 100%.</p></div>
+      <div class="box"><h3>Prioridades de los frentes → Paso 2</h3><div id="sl-prior"></div><p class="xs dim" style="margin:6px 0 0">Mueve cualquier control y todo el pipeline se recalcula.</p></div>
+    </div>
+    <div class="row" style="margin-top:16px"><button class="primary" id="btn-run">Ejecutar pipeline completo ▶</button><span class="small muted">Corre los pasos 1 a 4 y anima el algoritmo genético.</span></div>
+  </div>
+</section>
+
+<!-- ============================ CANDIDATOS ============================ -->
+<section class="card" id="cands">
+  <div class="head"><div class="l"><div class="num em">HH</div><div>
+    <h2>Rol headhunter — Base de 7 candidatos reales</h2>
+    <p class="sub small">Haz clic en un candidato para ver qué logró y qué no logró. Los puntajes 0–10 son estimaciones del equipo hechas con evidencia pública (uso académico).</p>
+  </div></div></div>
+  <div class="cands" id="cand-grid"></div>
+  <div class="grid g2" style="margin-top:16px">
+    <div class="box"><h3 id="rad-title">Perfil del candidato vs. importancia de cada criterio</h3><div class="chart tall"><canvas id="chRadar"></canvas></div></div>
+    <div class="box" id="cand-detail"></div>
+  </div>
+</section>
+
+<!-- ============================ PASO 1 ============================ -->
+<section class="card" id="p1">
+  <div class="head"><div class="l"><div class="num amb">1</div><div>
+    <h2>Paso 1 — Sistema experto (encadenamiento hacia adelante)</h2>
+    <p class="sub small">Reglas SI → ENTONCES del Sprint 2. Los umbrales vienen del Paso 0. Si quedan menos de 2 APTOS se aplica la regla de relajación.</p>
+  </div></div><span id="badge-p1" class="pill dim">En espera</span></div>
+  <div class="grid g2">
+    <div class="box"><h3>Base de reglas</h3><div id="rules" class="small mono" style="line-height:1.8"></div></div>
+    <div class="box"><h3>Bitácora del motor de inferencia</h3><div id="log-p1" class="log" style="max-height:220px">—</div></div>
+  </div>
+  <div class="tablewrap" style="margin-top:16px"><table><thead><tr><th>Candidato</th><th>Años CEO</th><th>Tecn.</th><th>Gob.</th><th>Transf.</th><th>Reglas disparadas</th><th>Alertas</th><th>Dictamen</th></tr></thead><tbody id="tb-p1"><tr><td colspan="8" class="dim">Ejecuta el pipeline.</td></tr></tbody></table></div>
+</section>
+
+<!-- ============================ PASO 3 ============================ -->
+<section class="card" id="p3">
+  <div class="head"><div class="l"><div class="num ora">2</div><div>
+    <h2>Paso 2 — Algoritmo genético: candidato + mandato de 100 días</h2>
+    <p class="sub small">Cromosoma <span class="mono">[candidato, foundry, IA, CPU-DC, PC-IA, costos, alianzas]</span> con intensidades de 0 a 3 y foco máximo de 9. Usa torneo (k=3), cruce uniforme, mutación y elitismo.</p>
+  </div></div><span id="badge-p3" class="pill dim">En espera</span></div>
+  <div class="grid g3" style="margin-bottom:16px">
+    <div class="box">
+      <h3>Parámetros</h3>
+      <div class="slider"><span>Población</span><input type="range" id="ga-pob" min="10" max="100" step="2" value="40"><span class="val" id="ga-pob-v">40</span></div>
+      <div class="slider"><span>Generaciones</span><input type="range" id="ga-gen" min="10" max="150" step="5" value="60"><span class="val" id="ga-gen-v">60</span></div>
+      <div class="slider"><span>Mutación/gen</span><input type="range" id="ga-mut" min="0" max="0.5" step="0.01" value="0.15"><span class="val" id="ga-mut-v">0.15</span></div>
+      <div class="slider"><span>Semilla</span><input type="range" id="ga-seed" min="1" max="100" step="1" value="42"><span class="val" id="ga-seed-v">42</span></div>
+      <button id="btn-ga" style="margin-top:8px;width:100%">Re-ejecutar AG (animado)</button>
+    </div>
+    <div class="box" style="grid-column:span 2">
+      <h3>Función de aptitud</h3>
+      <div class="mono small" style="background:#070b16;border:1px solid var(--line);border-radius:10px;padding:10px;color:var(--sky)">F = 0.45·ajuste/10 + 0.55·3·Σ p<sub>f</sub>·(intensidad<sub>f</sub>/3)·(competencia<sub>f</sub>/10) − 0.15·exceso_foco − 0.05·riesgo_ejecución − 0.06·foundry_sin_clientes − 0.05·conflicto</div>
+      <p class="xs dim"><b>ajuste</b> = promedio de los 8 criterios del candidato con los pesos del LLM (0–10). "foundry_sin_clientes" penaliza invertir fuerte en foundry sin un frente de alianzas (lección de IDM 2.0). "conflicto" viene de la alerta R6 del sistema experto.</p>
+      <h3 style="margin-top:12px">Mejor cromosoma <span id="ga-gen-now" class="dim small"></span></h3>
+      <div class="genes" id="genes"></div>
+      <p id="ga-verif" class="small" style="margin-bottom:0"></p>
+    </div>
+  </div>
+  <div class="grid g2">
+    <div class="box"><h3>Convergencia del fitness</h3><div class="chart"><canvas id="chGA"></canvas></div></div>
+    <div class="box"><h3>% de la población que elige a cada candidato</h3><div class="chart"><canvas id="chGAprop"></canvas></div></div>
+  </div>
+  <div class="tablewrap" style="margin-top:16px"><table><thead><tr><th>Candidato</th><th>Ajuste (0–10)</th><th>Foundry</th><th>IA</th><th>CPU-DC</th><th>PC-IA</th><th>Costos</th><th>Alianzas</th><th>Mejor fitness posible</th></tr></thead><tbody id="tb-p3"><tr><td colspan="9" class="dim">Ejecuta el pipeline.</td></tr></tbody></table></div>
+</section>
+
+<!-- ============================ PASO 4 ============================ -->
+<section class="card" id="p4">
+  <div class="head"><div class="l"><div class="num vio">3</div><div>
+    <h2>Paso 3 — Teoría de juegos: prueba de estrés de los finalistas</h2>
+    <p class="sub small">Juego simultáneo Intel vs. NVIDIA (equilibrio de Nash) y juego secuencial Intel → NVIDIA → AMD resuelto con Minimax y poda Alfa-Beta.</p>
+  </div></div></div>
+  <div class="tabs" id="gt-tabs"></div>
+  <div class="grid g2">
+    <div class="box">
+      <h3>Matriz de pagos (u<sub>Intel</sub>, u<sub>NVIDIA</sub>)</h3>
+      <div class="tablewrap"><table class="matrix" id="gt-matrix"></table></div>
+      <p class="xs dim">Celdas verdes = equilibrio de Nash en estrategias puras. Los pagos de Intel crecen con la competencia del CEO en foundry, IA y costos. Los pagos son pedagógicos, como en la clase 07.</p>
+      <div id="gt-summary" class="small"></div>
+    </div>
+    <div class="box"><h3>Árbol Minimax con poda Alfa-Beta</h3>
+      <div style="overflow-x:auto"><svg id="gt-tree" viewBox="0 0 760 330" style="width:100%;min-width:480px;height:auto"></svg></div>
+      <p class="xs dim" style="margin:0">MAX = Intel; MIN = NVIDIA y luego AMD, que eligen lo peor para Intel. Las hojas grises fueron podadas.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ DECISIÓN ============================ -->
+<section class="card" id="dec">
+  <div class="head"><div class="l"><div class="num em">★</div><div>
+    <h2>Decisión del headhunter</h2>
+    <p class="sub small">Puntaje final = 0.55·fitness AG (normalizado) + 0.30·valor Minimax (normalizado) + 0.15·disponibilidad</p>
+  </div></div></div>
+  <div class="grid g2">
+    <div class="box"><div class="chart"><canvas id="chFinal"></canvas></div></div>
+    <div class="box"><div class="tablewrap"><table><thead><tr><th>Finalista</th><th>Ajuste</th><th>Fitness AG</th><th>Minimax</th><th>Disp.</th><th>Puntaje</th></tr></thead><tbody id="tb-dec"><tr><td colspan="6" class="dim">Ejecuta el pipeline.</td></tr></tbody></table></div></div>
+  </div>
+</section>
+
+<!-- ============================ FINAL ============================ -->
+<section class="card" id="final">
+  <div class="head"><div class="l"><div class="num rose">4</div><div>
+    <h2>Paso 4 — Informe final del headhunter</h2>
+    <p class="sub small">El sistema decide; el texto resume el porqué.</p>
+  </div></div></div>
+  <div id="final-body"><p class="dim">Ejecuta el pipeline para ver la recomendación.</p></div>
+</section>
+
+</main>
+<footer><div class="wrap">
+  Fuentes: Intel Q2 2026 (Yahoo Finance, 23-jul-2026) · NVIDIA 8-K Q2 FY2027 (SEC, 26-ago-2026) · Mercury Research vía Tom's Hardware (14-may-2026) · AI Weekly, PDK 14A (27-jun-2026) · CNN/CNBC, inversión de NVIDIA en Intel (18-sep-2025) · Micron Q4 FY2026 (Blocks & Files, 01-oct-2026) · Broadcom Q3 FY2026 (DatacenterDynamics, 04-sep-2026) · Qualcomm Q3 FY2026 (Futurum, 03-ago-2026) · Bloomberg Law, Rene Haas (21-abr-2026) · Wikipedia.
+  Prototipo académico — los puntajes de los candidatos son estimaciones del equipo, no evaluaciones reales de esas personas.
+</div></footer>
+
+<script>
+// =====================================================================
+// DATOS (mismos del notebook Sprint 3 — versión 2)
+// =====================================================================
+const CRITERIOS = ["tecnologia","manufactura","ia","finanzas","transformacion","liderazgo","ecosistema","gobernanza"];
+const CRIT_LBL = {tecnologia:"Tecnología",manufactura:"Manufactura",ia:"IA",finanzas:"Finanzas",transformacion:"Transformación",liderazgo:"Liderazgo",ecosistema:"Ecosistema",gobernanza:"Gobernanza"};
+const FRENTES = ["foundry","aceleradores_ia","cpu_data_center","pc_ia","eficiencia_costos","alianzas"];
+const FR_LBL = {foundry:"Foundry",aceleradores_ia:"Aceleradores IA",cpu_data_center:"CPU data center",pc_ia:"PC con IA",eficiencia_costos:"Eficiencia costos",alianzas:"Alianzas"};
+const COLORS = ["#38bdf8","#34d399","#fbbf24","#a78bfa","#fb923c","#f472b6","#fb7185"];
+
+const CANDIDATOS = [
+ {id:"C1",nombre:"Lisa Su",cargo:"Presidenta y CEO de AMD (desde 2014)",exp_ceo:12,tecnologia:9.5,manufactura:6.5,ia:8.5,finanzas:8.5,transformacion:9.5,liderazgo:9.5,ecosistema:9.0,gobernanza:9.5,disponibilidad:0.10,conflicto:true,
+  logros:["Rescató a AMD de una situación cercana a la quiebra (2014) con la arquitectura Zen y el diseño por chiplets.","Llevó a AMD al 46% de los ingresos de CPU x86 para servidores (Q1 2026), casi todo ganado a Intel.","Compró Xilinx (~US$49.000 M, 2022) y construyó la línea Instinct (MI300/MI400) de aceleradores de IA.","Firmó acuerdos de varios gigavatios con OpenAI (2025) y Meta (2026) para la serie MI450."],
+  no:["La participación de AMD en aceleradores de IA sigue siendo pequeña frente a NVIDIA.","Su ecosistema de software (ROCm) va detrás de CUDA.","Nunca ha dirigido fábricas propias: AMD es fabless y depende de TSMC."]},
+ {id:"C2",nombre:"C.C. Wei",cargo:"Presidente de la junta y CEO de TSMC",exp_ceo:8,tecnologia:8.5,manufactura:10,ia:7.5,finanzas:8.5,transformacion:6.5,liderazgo:8.5,ecosistema:9.5,gobernanza:9.0,disponibilidad:0.05,conflicto:true,
+  logros:["Como CEO (2018) y presidente (2024) consolidó a TSMC como líder mundial en N5, N3 y N2.","Es el fabricante de los chips de IA de NVIDIA, AMD, Apple y los hiperescaladores; amplió el empaquetado CoWoS.","Lideró la expansión en Arizona, con un compromiso total de US$165.000 M."],
+  no:["La primera fábrica de Arizona se retrasó de 2024 a 2025 por falta de mano de obra y choques culturales.","No tiene experiencia dirigiendo una empresa en crisis ni el diseño de productos propios (TSMC es foundry pura)."]},
+ {id:"C3",nombre:"Hock Tan",cargo:"Presidente y CEO de Broadcom (desde 2006)",exp_ceo:20,tecnologia:6.5,manufactura:5.0,ia:9.0,finanzas:10,transformacion:9.0,liderazgo:6.5,ecosistema:8.5,gobernanza:7.0,disponibilidad:0.10,conflicto:true,
+  logros:["Convirtió a Avago en Broadcom con adquisiciones: Broadcom (2016), CA (2018), Symantec Enterprise (2019) y VMware (US$69.000 M, 2023).","Construyó el negocio de chips de IA a medida (XPU) para Google, OpenAI y Anthropic. Q3 FY2026: ingresos de US$29.600 M (+86%).","Es reconocido por su disciplina de costos y márgenes muy altos."],
+  no:["Su oferta hostil por Qualcomm (2018) fue bloqueada por el Gobierno de EE. UU.","Los cambios de licenciamiento de VMware provocaron rechazo de clientes, demandas y quejas regulatorias en Europa.","Su estilo de recortes agresivos choca con una cultura de I+D como la de Intel."]},
+ {id:"C4",nombre:"Sanjay Mehrotra",cargo:"Presidente de la junta y CEO de Micron (desde 2017)",exp_ceo:14,tecnologia:9.0,manufactura:9.0,ia:8.0,finanzas:8.0,transformacion:8.0,liderazgo:8.0,ecosistema:8.0,gobernanza:9.0,disponibilidad:0.15,conflicto:false,
+  logros:["Cofundó SanDisk (1988) y, como CEO, la vendió a Western Digital por ~US$19.000 M (2016).","Llevó a Micron al liderazgo en memoria HBM para IA. FY2026: ingresos récord de US$133.200 M (+256%).","Dirige fábricas propias en EE. UU. y Asia; obtuvo ~US$6.100 M del CHIPS Act."],
+  no:["Micron llegó tarde a HBM3 frente a SK hynix.","Registró una pérdida de ~US$5.800 M en el ciclo bajo de FY2023.","China prohibió el uso de chips de Micron en infraestructura crítica (2023)."]},
+ {id:"C5",nombre:"Cristiano Amon",cargo:"Presidente y CEO de Qualcomm (desde 2021)",exp_ceo:5,tecnologia:8.5,manufactura:5.0,ia:7.0,finanzas:7.0,transformacion:7.5,liderazgo:8.0,ecosistema:8.5,gobernanza:8.5,disponibilidad:0.25,conflicto:true,
+  logros:["Diversificó Qualcomm hacia automoción: +61% interanual en Q3 FY2026 (US$1.590 M).","Entró al mercado de PC con Snapdragon X (Arm), en competencia directa con Intel.","Ganó el juicio contra Arm por licencias (jurado, diciembre de 2024)."],
+  no:["Perdió el negocio de módems de Apple; el segmento de celulares cayó 20% interanual en Q3 FY2026.","Su entrada a centros de datos aún no genera ingresos relevantes.","La participación de Snapdragon en PC sigue siendo pequeña."]},
+ {id:"C6",nombre:"Rene Haas",cargo:"CEO de Arm (desde 2022) y líder de SoftBank Group International",exp_ceo:4,tecnologia:8.0,manufactura:4.0,ia:8.0,finanzas:8.0,transformacion:7.5,liderazgo:7.5,ecosistema:8.0,gobernanza:7.5,disponibilidad:0.20,conflicto:true,
+  logros:["Llevó a Arm a la salida a bolsa más grande de 2023 (Nasdaq).","Aumentó las regalías con Armv9 e impulsó la adopción de Arm en centros de datos.","Trabajó 7 años en NVIDIA; en 2026 SoftBank amplió su rol para coordinar sus empresas de chips e IA."],
+  no:["Perdió el juicio contra Qualcomm (diciembre de 2024).","Su giro hacia chips propios genera conflicto con los clientes de Arm.","No tiene experiencia en manufactura ni en dirigir una empresa de más de 100.000 empleados."]},
+ {id:"C7",nombre:"Pat Gelsinger",cargo:"Socio general de Playground Global; presidente ejecutivo de Gloo",exp_ceo:13,tecnologia:9.5,manufactura:7.0,ia:4.0,finanzas:3.5,transformacion:5.0,liderazgo:7.0,ecosistema:7.5,gobernanza:7.0,disponibilidad:0.90,conflicto:false,
+  logros:["Fue arquitecto del 80486 y CTO de Intel (2001–2009).","Como CEO de VMware (2012–2021) más que duplicó los ingresos.","Impulsó el CHIPS Act y la estrategia IDM 2.0 (Intel Foundry)."],
+  no:["Como CEO de Intel (2021–2024): pérdida de ~US$18.700 M en 2024, suspensión del dividendo y recorte de ~15% de la plantilla.","Llegó tarde a la IA: Gaudi no cumplió su meta de ventas.","Invirtió en fábricas sin clientes de foundry comprometidos; fue removido por la junta."]},
+];
+CANDIDATOS.forEach((c,i)=>c.color=COLORS[i]);
+
+const DOSSIER = {
+ fecha_corte:"2026-10-15",
+ ceo_actual:{nombre:"Lip-Bu Tan",desde:"marzo de 2025",trayectoria:"CEO de Cadence Design Systems (2009–2021); fundador de Walden International; miembro de la junta de Intel hasta agosto de 2024, cuando renunció por desacuerdos con la estrategia.",
+  decisiones:["Reducción fuerte de plantilla y recorte de gastos operativos durante 2025.","Cancelación o retraso de fábricas (Alemania y Polonia canceladas; Ohio desacelerada).","Venta del 51% de Altera a Silver Lake.","Entrada del Gobierno de EE. UU. como mayor accionista (~10%, agosto de 2025), inversión de NVIDIA por US$5.000 M (sept. 2025) y de SoftBank por US$2.000 M.","Lanzamiento de Panther Lake en el nodo 18A; kit de diseño (PDK) 0.9 del nodo 14A para clientes externos en octubre de 2026."],
+  resultados_recientes:"Q2 2026: ingresos US$16.100 M (+25% interanual); Data Center e IA US$6.300 M (+59%); Foundry US$5.800 M (+31%); margen bruto GAAP 40,4%. Pérdida neta GAAP de US$11.000 M por un ajuste contable ligado al acuerdo CHIPS. La demanda de CPU para servidores supera la capacidad.",
+  controversias:"En agosto de 2025 el presidente de EE. UU. pidió públicamente su renuncia por sus inversiones ligadas a China; luego se reunieron y el Gobierno terminó tomando una participación en Intel."},
+ ceo_anterior:{nombre:"Pat Gelsinger",periodo:"febrero de 2021 – diciembre de 2024 (salida forzada por la junta)",
+  decisiones:["Estrategia IDM 2.0: ser fabricante propio y foundry para terceros; plan de '5 nodos en 4 años'.","Inversiones masivas en fábricas sin clientes externos de foundry comprometidos.","Apuesta tardía y débil por aceleradores de IA (Gaudi no alcanzó la meta de US$500 M en 2024).","2024: pérdida neta de ~US$18.700 M, suspensión del dividendo y recorte de ~15% de la plantilla."]},
+ mercado:{nvidia:"Q2 FY2027: ingresos de US$96.200 M (+106%), Data Center US$89.000 M, margen bruto del 75%.",amd:"Q1 2026: 33,2% de las unidades y 46,2% de los ingresos de CPU x86 para servidores. Intel conserva cerca del 70% del mercado de PC.",tsmc:"N2 en producción desde finales de 2025; inversión anunciada de US$165.000 M en Arizona.",foundry_intel:"Ningún cliente externo ha firmado un compromiso formal de volumen en 14A. Se reporta que Apple evalúa 14A y que Intel se unió al proyecto Terafab. Producción de volumen de 14A en 2029.",
+  tendencias:["Demanda explosiva de cómputo para IA.","Chips a medida (ASIC/XPU) de los hiperescaladores.","Soberanía tecnológica y relocalización de la manufactura (CHIPS Act).","Avance de Arm en PC y centros de datos.","Escasez de capacidad en nodos avanzados y empaquetado."]}
+};
+
+const ANALISIS_DEMO = {
+ empresa:"Intel Corporation",
+ diagnostico_empresa:{
+  resumen:"Intel vive una recuperación operativa real en 2026: sus ingresos crecieron 25% en Q2 y su margen bruto subió a 40,4%, impulsados por la demanda de CPU para servidores de IA. Pero la brecha estructural con NVIDIA es enorme: NVIDIA factura unas seis veces más por trimestre, con márgenes del 75%. Intel no tiene una franquicia relevante en aceleradores de IA y su foundry aún no tiene un cliente externo comprometido en volumen. Además, AMD ya captura el 46% de los ingresos de CPU para servidores. La empresa depende de capital externo y necesita convertir la recuperación táctica en una estrategia ganadora de largo plazo.",
+  fortalezas:["Cerca del 70% del mercado de CPU para PC y una enorme base instalada x86","Fabricación avanzada propia en EE. UU. (18A en producción, 14A en camino), clave para la soberanía tecnológica","Respaldo de capital del Gobierno de EE. UU., NVIDIA y SoftBank","Demanda de CPU para servidores de IA mayor que la capacidad, con 10 contratos de largo plazo"],
+  debilidades:["Sin producto competitivo en aceleradores de IA (Gaudi no alcanzó sus metas)","Intel Foundry sin clientes externos comprometidos en volumen","Pérdida de cuota en servidores frente a AMD","Historial de retrasos de nodos que dañó su credibilidad de ejecución"],
+  oportunidades:["Ser la alternativa occidental a TSMC para Apple, Terafab y los hiperescaladores","Empaquetado avanzado (Foveros/EMIB) ante la escasez de CoWoS","Alianza con NVIDIA: CPU x86 con NVLink y SoC para PC con GPU RTX","AI PC y CPU para inferencia en centros de datos"],
+  amenazas:["NVIDIA, AMD y los ASIC de los hiperescaladores capturan el gasto en IA","Avance de Arm en PC y servidores","TSMC con N2, A14 y US$165.000 M en Arizona","Intensidad de capital: si 14A no consigue clientes, la foundry vuelve a destruir valor"]},
+ analisis_ceo_actual:{nombre:"Lip-Bu Tan",
+  aciertos:["Estabilizó las finanzas: recortó costos, vendió el 51% de Altera y atrajo capital estratégico","Disciplina de inversión: canceló fábricas sin demanda (Alemania, Polonia)","Recuperó la confianza del mercado con resultados por encima de lo esperado durante 2026"],
+  limitaciones:["Su perfil es de inversionista y de software EDA, no de operación de fábricas a gran escala","La estrategia de IA en centros de datos sigue sin un producto líder","Tuvo una polémica pública por sus inversiones ligadas a China (agosto de 2025)","La recuperación se basa en CPU y no cierra la brecha con NVIDIA"],
+  por_que_se_requiere_un_cambio:"La fase de estabilización ya se logró. La siguiente fase exige un líder que convierta a Intel en un actor central de la infraestructura de IA, que llene las fábricas con clientes externos y construya una oferta de IA competitiva. Es pasar de un CEO de rescate financiero a un CEO de crecimiento tecnológico y de manufactura."},
+ legado_ceo_anterior:{nombre:"Pat Gelsinger",decisiones_que_dejaron_atras_a_intel:["Construyó capacidad de foundry (IDM 2.0) sin clientes externos comprometidos","Llegó tarde y con poca fuerza a los aceleradores de IA, mientras NVIDIA capturaba el mercado","Hizo promesas agresivas de nodos ('5 en 4 años') que presionaron las finanzas","Terminó con pérdidas récord en 2024, suspensión del dividendo y despidos masivos"]},
+ problematica_central:"Intel recuperó estabilidad financiera, pero sigue fuera del centro del gasto mundial en IA. No tiene un acelerador competitivo, su foundry no ha llenado sus fábricas con clientes externos y pierde terreno en servidores. Necesita un CEO que combine excelencia en manufactura de semiconductores, visión de IA y capacidad de construir alianzas con clientes.",
+ tipo_crisis:"MIXTA",
+ tendencias_mercado:["Cómputo para IA como motor del gasto en semiconductores","Chips a medida de los hiperescaladores","Relocalización de la manufactura y soberanía tecnológica","Arm en PC y servidores","Cuellos de botella en empaquetado avanzado y memoria HBM"],
+ estrategia_reclutamiento:{nombre:"Constructor de plataforma: IA + manufactura",
+  pilares:["Experiencia comprobada operando manufactura de semiconductores a gran escala","Historial transformando una empresa rezagada en líder de su categoría","Credibilidad con clientes de IA (hiperescaladores, NVIDIA, Apple) y con el Gobierno","Disciplina de capital: invertir solo con demanda comprometida","Gobernanza impecable y sin conflictos de interés"],
+  perfil_ideal:"Ejecutivo con al menos 5 años como CEO de una empresa de semiconductores, profundo dominio técnico y de manufactura, experiencia llevando productos al mercado de IA, historial de transformación y relaciones sólidas con clientes estratégicos.",
+  preguntas_clave_entrevista:["¿Qué tres clientes externos firmaría para 14A en sus primeros 12 meses y cómo?","¿Cómo competiría Intel en IA sin enfrentarse de frente a NVIDIA?","¿Qué invertiría y qué cerraría en sus primeros 100 días?"],
+  senales_de_alerta:["Promesas de nodos sin clientes ni fechas verificables","Conflictos de interés con competidores o proveedores","Recortes de I+D como única palanca de mejora"]},
+ requisitos_rigidos:{exp_min_ceo_anos:5,min_tecnologia:8,min_gobernanza:7.5,min_transformacion:7},
+ pesos_criterios:{tecnologia:0.16,manufactura:0.18,ia:0.18,finanzas:0.10,transformacion:0.14,liderazgo:0.10,ecosistema:0.08,gobernanza:0.06},
+ prioridades_frentes:{foundry:0.28,aceleradores_ia:0.24,cpu_data_center:0.18,pc_ia:0.08,eficiencia_costos:0.10,alianzas:0.12},
+ justificacion_cuantitativa:"Manufactura e IA pesan más porque son las dos brechas centrales. La transformación pesa por la necesidad de un giro. Foundry e IA lideran las prioridades porque definen el valor de largo plazo; las alianzas son el puente hacia los clientes de la foundry."
+};
+
+// =====================================================================
+// UTILIDADES
+// =====================================================================
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+const li = arr => (arr||[]).map(x=>`<li>${esc(x)}</li>`).join("");
+const clip = (v,a,b)=>Math.max(a,Math.min(b,v));
+const num = (v,d)=>{const n=parseFloat(v);return Number.isFinite(n)?n:d;};
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
+function gauss(r){let u=0,v=0;while(u===0)u=r();while(v===0)v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+function normalizarPesos(obj,claves){let v=claves.map(k=>Math.max(0,num((obj||{})[k],0)));const s=v.reduce((a,b)=>a+b,0);if(s===0)v=claves.map(()=>1);const t=v.reduce((a,b)=>a+b,0);const o={};claves.forEach((k,i)=>o[k]=v[i]/t);return o;}
+function markDone(id){const a=$("nav-"+id);if(a)a.classList.add("done");}
+Chart.defaults.color="#93a0b8";Chart.defaults.borderColor="#1e2a45";Chart.defaults.font.family="Inter, sans-serif";Chart.defaults.font.size=11;
+const charts={};
+function mkChart(id,cfg){if(charts[id])charts[id].destroy();charts[id]=new Chart($(id).getContext("2d"),cfg);return charts[id];}
+
+// =====================================================================
+// ESTADO
+// =====================================================================
+let ANALISIS=null, CONFIG=null, R={};
+
+function validarConfiguracion(a){
+  const req=a.requisitos_rigidos||{};
+  return {
+    tipo_crisis:a.tipo_crisis||"MIXTA",
+    requisitos:{
+      exp_min_ceo_anos:Math.round(clip(num(req.exp_min_ceo_anos,5),3,15)),
+      min_tecnologia:clip(num(req.min_tecnologia,7),0,9.5),
+      min_gobernanza:clip(num(req.min_gobernanza,7),0,9.5),
+      min_transformacion:clip(num(req.min_transformacion,6),0,9.5)},
+    pesos:normalizarPesos(a.pesos_criterios,CRITERIOS),
+    prioridades:normalizarPesos(a.prioridades_frentes,FRENTES)};
+}
+
+// =====================================================================
+// PASO 0 — LLM
+// =====================================================================
+const MODELOS_GEMINI=["gemini-2.5-flash","gemini-flash-latest","gemini-2.5-flash-lite","gemini-flash-lite-latest","gemini-2.0-flash"];
+const INSTRUCCION="Eres un analista senior del contexto de la industria tecnológica y de semiconductores y un experto en gobierno corporativo y búsqueda de ejecutivos. Respondes en español, con rigor, basándote en los hechos que se te entregan. Respondes ÚNICAMENTE con un objeto JSON válido.";
+function construirPrompt(extra){
+  const esquema=JSON.stringify({empresa:"string",diagnostico_empresa:{resumen:"string",fortalezas:["string"],debilidades:["string"],oportunidades:["string"],amenazas:["string"]},analisis_ceo_actual:{nombre:"string",aciertos:["string"],limitaciones:["string"],por_que_se_requiere_un_cambio:"string"},legado_ceo_anterior:{nombre:"string",decisiones_que_dejaron_atras_a_intel:["string"]},problematica_central:"string",tipo_crisis:"TECNOLOGICA | FINANCIERA | GOBERNANZA | MIXTA",tendencias_mercado:["string"],estrategia_reclutamiento:{nombre:"string",pilares:["string"],perfil_ideal:"string",preguntas_clave_entrevista:["string"],senales_de_alerta:["string"]},requisitos_rigidos:{exp_min_ceo_anos:"entero 3-15",min_tecnologia:"0-10",min_gobernanza:"0-10",min_transformacion:"0-10"},pesos_criterios:Object.fromEntries(CRITERIOS.map(k=>[k,"peso"])),prioridades_frentes:Object.fromEntries(FRENTES.map(k=>[k,"peso"])),justificacion_cuantitativa:"string"},null,1);
+  return `Contexto: un software académico de reclutamiento busca al mejor CEO para Intel Corporation. La empresa se quedó atrás por decisiones de sus CEO anteriores y fue superada por NVIDIA. Se necesita un CEO que la desestanque y la impulse en la industria tecnológica mundial. Fecha del análisis: 2026-10-15.
+
+DOSSIER DE HECHOS VERIFICADOS (no inventes cifras que no estén aquí):
+${JSON.stringify(DOSSIER,null,1)}
+${extra?`\nCONTEXTO ADICIONAL DEL USUARIO: ${extra}\n`:""}
+TAREA:
+1. Analiza la empresa, a su CEO actual y el legado del CEO anterior.
+2. Explica la problemática central y por qué se requiere un nuevo tipo de liderazgo.
+3. Diseña una estrategia de reclutamiento y el perfil del nuevo CEO.
+4. Traduce el perfil a números: requisitos_rigidos (realistas; umbrales demasiado altos dejan sin candidatos), pesos_criterios (8 pesos que sumen 1) y prioridades_frentes (6 pesos que sumen 1).
+
+Responde SOLO con un JSON que siga exactamente este esquema:
+${esquema}`;
+}
+function extraerJSON(t){t=t.trim();const i=t.indexOf("{"),j=t.lastIndexOf("}");return JSON.parse(t.slice(i,j+1));}
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function logLLM(msg){const el=$("log-llm");el.textContent=(el.textContent==="Esperando…"?"":el.textContent+"\n")+msg;el.scrollTop=el.scrollHeight;}
+
+async function consultarGemini(){
+  const key=$("apikey").value.trim();
+  if(!key){$("live-status").innerHTML='<span class="bad">Pega tu API key primero.</span>';return;}
+  $("btn-live").disabled=true;$("live-status").innerHTML='<span class="spinner"></span> Consultando…';
+  $("log-llm").textContent="";
+  const cuerpo={systemInstruction:{parts:[{text:INSTRUCCION}]},contents:[{role:"user",parts:[{text:construirPrompt($("extra").value.trim())}]}],generationConfig:{temperature:0.2,responseMimeType:"application/json"}};
+  try{
+    for(const modelo of MODELOS_GEMINI){
+      for(let intento=1;intento<=3;intento++){
+        logLLM(`→ ${modelo} (intento ${intento})`);
+        let r;
+        try{r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent`,{method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":key},body:JSON.stringify(cuerpo)});}
+        catch(e){logLLM("  error de red: "+e.message);await sleep(3000*intento);continue;}
+        if(r.ok){
+          const d=await r.json();
+          const texto=(d.candidates?.[0]?.content?.parts||[]).map(p=>p.text||"").join("");
+          const a=extraerJSON(texto);
+          logLLM(`✓ Respuesta recibida de ${modelo}`);
+          cargarAnalisis(a,`Gemini en vivo (${modelo})`);
+          $("live-status").innerHTML='<span class="ok">✓ Análisis recibido</span>';
+          return;
+        }
+        logLLM(`  HTTP ${r.status}`);
+        if(r.status===401||r.status===403){throw new Error("La API key fue rechazada. Revísala.");}
+        if([429,500,503].includes(r.status)){const w=8*intento;logLLM(`  modelo ocupado, reintento en ${w} s…`);await sleep(w*1000);continue;}
+        break;
+      }
+      logLLM("  ↪ probando el siguiente modelo");
+    }
+    throw new Error("Todos los modelos fallaron. Espera unos minutos o usa el análisis de demostración.");
+  }catch(e){$("live-status").innerHTML=`<span class="bad">${esc(e.message)}</span>`;logLLM("✗ "+e.message);}
+  finally{$("btn-live").disabled=false;}
+}
+
+function cargarAnalisis(a,fuente){
+  ANALISIS=a;CONFIG=validarConfiguracion(a);
+  $("badge-p0").className="pill em";$("badge-p0").textContent="✓ "+fuente;
+  const d=a.diagnostico_empresa||{},c=a.analisis_ceo_actual||{},l=a.legado_ceo_anterior||{},e=a.estrategia_reclutamiento||{};
+  $("tipo-crisis").textContent="Crisis: "+(a.tipo_crisis||"MIXTA");
+  $("diag-resumen").textContent=d.resumen||"";
+  $("f-fort").innerHTML=li(d.fortalezas);$("f-deb").innerHTML=li(d.debilidades);$("f-opo").innerHTML=li(d.oportunidades);$("f-ame").innerHTML=li(d.amenazas);
+  $("ceo-actual-t").textContent="CEO actual: "+(c.nombre||"");$("ceo-aci").innerHTML=li(c.aciertos);$("ceo-lim").innerHTML=li(c.limitaciones);$("ceo-por").textContent=c.por_que_se_requiere_un_cambio||"";
+  $("ceo-ant-t").textContent="Legado del CEO anterior: "+(l.nombre||"");$("ceo-leg").innerHTML=li(l.decisiones_que_dejaron_atras_a_intel);
+  $("problematica").textContent=a.problematica_central||"";
+  $("est-nombre").textContent=e.nombre||"";$("est-pil").innerHTML=li(e.pilares);$("est-preg").innerHTML=li(e.preguntas_clave_entrevista);$("est-alert").innerHTML=li(e.senales_de_alerta);$("est-perfil").textContent=e.perfil_ideal||"";
+  construirSliders();
+  $("p0-report").classList.remove("hidden");
+  markDone("p0");
+  renderRadar(R.sel??0);
+  ejecutarTodo(true);
+}
+
+function construirSliders(){
+  const req=CONFIG.requisitos;
+  const defs=[["exp_min_ceo_anos","Años CEO",3,15,1],["min_tecnologia","Tecnología",0,9.5,0.5],["min_gobernanza","Gobernanza",0,9.5,0.5],["min_transformacion","Transformación",0,9.5,0.5]];
+  $("sl-req").innerHTML=defs.map(([k,lbl,mn,mx,st])=>`<div class="slider"><span>${lbl} ≥</span><input type="range" data-g="req" data-k="${k}" min="${mn}" max="${mx}" step="${st}" value="${req[k]}"><span class="val">${req[k]}</span></div>`).join("");
+  $("sl-pesos").innerHTML=CRITERIOS.map(k=>`<div class="slider"><span>${CRIT_LBL[k]}</span><input type="range" data-g="pesos" data-k="${k}" min="0" max="0.5" step="0.01" value="${CONFIG.pesos[k].toFixed(2)}"><span class="val">${(CONFIG.pesos[k]*100).toFixed(0)}%</span></div>`).join("");
+  $("sl-prior").innerHTML=FRENTES.map(k=>`<div class="slider"><span>${FR_LBL[k]}</span><input type="range" data-g="prior" data-k="${k}" min="0" max="0.5" step="0.01" value="${CONFIG.prioridades[k].toFixed(2)}"><span class="val">${(CONFIG.prioridades[k]*100).toFixed(0)}%</span></div>`).join("");
+  document.querySelectorAll("#p0-report input[type=range]").forEach(inp=>inp.addEventListener("input",onSlider));
+}
+let deb=null;
+function onSlider(){
+  const pesosRaw={},priorRaw={};
+  document.querySelectorAll("#sl-req input").forEach(i=>{CONFIG.requisitos[i.dataset.k]=parseFloat(i.value);i.nextElementSibling.textContent=i.value;});
+  document.querySelectorAll("#sl-pesos input").forEach(i=>pesosRaw[i.dataset.k]=parseFloat(i.value));
+  document.querySelectorAll("#sl-prior input").forEach(i=>priorRaw[i.dataset.k]=parseFloat(i.value));
+  CONFIG.pesos=normalizarPesos(pesosRaw,CRITERIOS);CONFIG.prioridades=normalizarPesos(priorRaw,FRENTES);
+  document.querySelectorAll("#sl-pesos input").forEach(i=>i.nextElementSibling.textContent=(CONFIG.pesos[i.dataset.k]*100).toFixed(0)+"%");
+  document.querySelectorAll("#sl-prior input").forEach(i=>i.nextElementSibling.textContent=(CONFIG.prioridades[i.dataset.k]*100).toFixed(0)+"%");
+  clearTimeout(deb);deb=setTimeout(()=>{renderRadar(R.sel??0);ejecutarTodo(false);},120);
+}
+
+// =====================================================================
+// CANDIDATOS (tarjetas + radar)
+// =====================================================================
+function renderCandidatos(){
+  $("cand-grid").innerHTML=CANDIDATOS.map((c,i)=>`<button class="cand" data-i="${i}"><div class="n"><span class="dot" style="background:${c.color}"></span>${esc(c.nombre)}</div><div class="c">${esc(c.cargo)}</div><div class="xs dim" style="margin-top:6px">Disponibilidad ${(c.disponibilidad*100).toFixed(0)}%${c.conflicto?' · <span class="warn">conflicto</span>':''}</div></button>`).join("");
+  document.querySelectorAll(".cand").forEach(b=>b.addEventListener("click",()=>renderRadar(+b.dataset.i)));
+}
+function renderRadar(i){
+  R.sel=i;const c=CANDIDATOS[i];
+  document.querySelectorAll(".cand").forEach(b=>b.classList.toggle("sel",+b.dataset.i===i));
+  const pesos=CONFIG?CONFIG.pesos:Object.fromEntries(CRITERIOS.map(k=>[k,1/8]));
+  const mx=Math.max(...Object.values(pesos));
+  mkChart("chRadar",{type:"radar",data:{labels:CRITERIOS.map(k=>CRIT_LBL[k]),datasets:[
+    {label:c.nombre,data:CRITERIOS.map(k=>c[k]),borderColor:c.color,backgroundColor:c.color+"33",pointRadius:3},
+    {label:"Importancia según el LLM (escalada a 10)",data:CRITERIOS.map(k=>10*pesos[k]/mx),borderColor:"#93a0b8",borderDash:[5,4],backgroundColor:"transparent",pointRadius:0}]},
+    options:{maintainAspectRatio:false,scales:{r:{min:0,max:10,ticks:{display:false},grid:{color:"#1e2a45"},angleLines:{color:"#1e2a45"},pointLabels:{color:"#cfd6e4",font:{size:11}}}},plugins:{legend:{position:"bottom"}}}});
+  const ev=R.p1?R.p1.resultados[i]:null;
+  $("cand-detail").innerHTML=`<div class="row" style="justify-content:space-between"><h3 style="font-size:18px;margin:0">${esc(c.nombre)}</h3>${ev?(ev.apto?'<span class="badge ok">APTO</span>':'<span class="badge bad">NO APTO</span>'):''}</div>
+   <p class="small muted" style="margin:2px 0 10px">${esc(c.cargo)} · ${c.exp_ceo} años como CEO</p>
+   <span class="label" style="color:var(--em)">Lo que logró</span><ul class="clean small">${li(c.logros)}</ul>
+   <span class="label" style="color:var(--rose);margin-top:10px">Lo que no logró</span><ul class="clean small">${li(c.no)}</ul>`;
+}
+
+// =====================================================================
+// PASO 1 — SISTEMA EXPERTO
+// =====================================================================
+function construirReglas(req){
+  const oblig=["experiencia_ceo_ok","tecnologia_ok","gobernanza_ok","transformacion_ok"];
+  return [
+   {id:"R1",d:`SI años como CEO ≥ ${req.exp_min_ceo_anos} → experiencia_ceo_ok`,c:(x)=>x.exp_ceo>=req.exp_min_ceo_anos,h:"experiencia_ceo_ok"},
+   {id:"R2",d:`SI tecnología ≥ ${req.min_tecnologia} → tecnologia_ok`,c:(x)=>x.tecnologia>=req.min_tecnologia,h:"tecnologia_ok"},
+   {id:"R3",d:`SI gobernanza ≥ ${req.min_gobernanza} → gobernanza_ok`,c:(x)=>x.gobernanza>=req.min_gobernanza,h:"gobernanza_ok"},
+   {id:"R4",d:`SI transformación ≥ ${req.min_transformacion} → transformacion_ok`,c:(x)=>x.transformacion>=req.min_transformacion,h:"transformacion_ok"},
+   {id:"R5",d:"SI disponibilidad < 0.30 → riesgo_disponibilidad (alerta)",c:(x)=>x.disponibilidad<0.30,h:"riesgo_disponibilidad"},
+   {id:"R6",d:"SI dirige a un competidor/proveedor → riesgo_conflicto (alerta)",c:(x)=>x.conflicto,h:"riesgo_conflicto"},
+   {id:"R7",d:"SI R1 ∧ R2 ∧ R3 ∧ R4 → cumple_requisitos",c:(x,H)=>oblig.every(o=>H.has(o)),h:"cumple_requisitos"},
+   {id:"R8",d:"SI cumple_requisitos → APTO",c:(x,H)=>H.has("cumple_requisitos"),h:"APTO"}];
+}
+function encadenar(x,reglas){const H=new Set(),traza=[];let nuevo=true;while(nuevo){nuevo=false;for(const r of reglas){if(!H.has(r.h)&&r.c(x,H)){H.add(r.h);traza.push(r.id);nuevo=true;}}}return{H,traza};}
+function paso1(req0){
+  let req={...req0};const log=[];
+  for(let it=0;it<10;it++){
+    const reglas=construirReglas(req);
+    const res=CANDIDATOS.map(c=>{const {H,traza}=encadenar(c,reglas);return{...c,H,traza,apto:H.has("APTO")};});
+    res.forEach(r=>log.push(`[iter ${it}] ${r.nombre.padEnd(16)} → ${r.traza.join(" → ")||"—"}  ⇒ ${r.apto?"APTO":"NO APTO"}`));
+    if(res.filter(r=>r.apto).length>=2||it===9)return{resultados:res,req,relajaciones:it,log,reglas};
+    log.push(`⚠ Regla de relajación #${it+1}: menos de 2 APTOS → umbrales −0.5 (años −1)`);
+    req={exp_min_ceo_anos:Math.max(0,req.exp_min_ceo_anos-1),min_tecnologia:Math.max(0,req.min_tecnologia-0.5),min_gobernanza:Math.max(0,req.min_gobernanza-0.5),min_transformacion:Math.max(0,req.min_transformacion-0.5)};
+  }
+}
+function renderP1(){
+  const p=R.p1;
+  $("rules").innerHTML=p.reglas.map(r=>`<div><span class="chip n">${r.id}</span> ${esc(r.d)}</div>`).join("")+(p.relajaciones?`<div class="warn" style="margin-top:6px">Se aplicaron ${p.relajaciones} relajación(es).</div>`:"");
+  $("log-p1").textContent=p.log.join("\n");
+  const req=p.req;
+  $("tb-p1").innerHTML=p.resultados.map(r=>`<tr><td><span class="dot" style="background:${r.color}"></span><b>${esc(r.nombre)}</b></td>
+   <td class="${r.exp_ceo>=req.exp_min_ceo_anos?'ok':'bad'}">${r.exp_ceo}</td><td class="${r.tecnologia>=req.min_tecnologia?'ok':'bad'}">${r.tecnologia}</td>
+   <td class="${r.gobernanza>=req.min_gobernanza?'ok':'bad'}">${r.gobernanza}</td><td class="${r.transformacion>=req.min_transformacion?'ok':'bad'}">${r.transformacion}</td>
+   <td>${r.traza.map(t=>`<span class="chip ${["R5","R6"].includes(t)?'w':'ok'}">${t}</span>`).join("")}</td>
+   <td class="small">${[...r.H].filter(h=>h.startsWith("riesgo")).map(h=>`<span class="chip w">${h.replace("riesgo_","")}</span>`).join("")||'<span class="dim">—</span>'}</td>
+   <td>${r.apto?'<span class="badge ok">APTO</span>':'<span class="badge bad">NO APTO</span>'}</td></tr>`).join("");
+  const n=p.resultados.filter(r=>r.apto).length;
+  $("badge-p1").className="pill em";$("badge-p1").textContent=`${n} de 7 APTOS`;
+  markDone("cands");markDone("p1");
+}
+
+// =====================================================================
+// PASO 2 — ALGORITMO GENÉTICO
+// =====================================================================
+const MAPA={foundry:{manufactura:.6,ecosistema:.25,tecnologia:.15},aceleradores_ia:{ia:.6,tecnologia:.4},cpu_data_center:{tecnologia:.5,ecosistema:.3,ia:.2},pc_ia:{tecnologia:.5,ecosistema:.5},eficiencia_costos:{finanzas:.6,transformacion:.4},alianzas:{ecosistema:.6,gobernanza:.4}};
+const MAX_FOCO=9,NIV=4;
+const ajusteEstrategico=(c,p)=>CRITERIOS.reduce((s,k)=>s+p[k]*c[k],0);
+const competencia=(c,f)=>Object.entries(MAPA[f]).reduce((s,[k,w])=>s+w*c[k],0);
+function fitness(ind,pool,prior){
+  const c=pool[ind[0]],plan=ind.slice(1);
+  let v=0;FRENTES.forEach((f,i)=>v+=prior[f]*(plan[i]/3)*(competencia(c,f)/10));
+  const suma=plan.reduce((a,b)=>a+b,0),exceso=Math.max(0,suma-MAX_FOCO);
+  const rEj=FRENTES.filter((f,i)=>plan[i]===3&&competencia(c,f)<6).length;
+  const fsc=(plan[0]>=2&&plan[5]===0)?1:0;
+  const conf=c.H&&c.H.has("riesgo_conflicto")?1:0;   // alerta R6 del sistema experto
+  return 0.45*c.ajuste/10+0.55*v*3-0.15*exceso-0.05*rEj-0.06*fsc-0.05*conf;
+}
+function runGA(pool,prior,P){
+  const r=mulberry32(P.seed),n=pool.length,ri=k=>Math.floor(r()*k);
+  let pop=Array.from({length:P.pob},()=>[ri(n),...FRENTES.map(()=>ri(NIV))]);
+  const hist={mejor:[],prom:[],prop:pool.map(()=>[]),best:[]};
+  const torneo=(fits)=>{let b=-1;for(let t=0;t<3;t++){const i=ri(pop.length);if(b<0||fits[i]>fits[b])b=i;}return pop[b];};
+  const cruce=(a,b)=>{if(r()>0.9)return[a.slice(),b.slice()];const h1=[],h2=[];a.forEach((g,i)=>{if(r()<.5){h1.push(g);h2.push(b[i]);}else{h1.push(b[i]);h2.push(g);}});return[h1,h2];};
+  const mutar=(x)=>{x=x.slice();if(r()<0.10)x[0]=ri(n);for(let i=1;i<x.length;i++)if(r()<P.mut)x[i]=clip(x[i]+(r()<.5?-1:1),0,NIV-1);return x;};
+  for(let g=0;g<P.gen;g++){
+    const fits=pop.map(ind=>fitness(ind,pool,prior));
+    const ord=fits.map((f,i)=>i).sort((a,b)=>fits[b]-fits[a]);
+    hist.mejor.push(fits[ord[0]]);hist.prom.push(fits.reduce((a,b)=>a+b,0)/fits.length);hist.best.push(pop[ord[0]].slice());
+    pool.forEach((_,i)=>hist.prop[i].push(100*pop.filter(x=>x[0]===i).length/pop.length));
+    const nueva=[pop[ord[0]].slice(),pop[ord[1]].slice()];
+    while(nueva.length<P.pob){const[h1,h2]=cruce(torneo(fits),torneo(fits));nueva.push(mutar(h1),mutar(h2));}
+    pop=nueva.slice(0,P.pob);
+  }
+  const fits=pop.map(ind=>fitness(ind,pool,prior));let bi=0;fits.forEach((f,i)=>{if(f>fits[bi])bi=i;});
+  return{best:pop[bi],bestFit:fits[bi],hist};
+}
+function exhaustivo(pool,prior){
+  const mejorPor={};let opt=null,optF=-Infinity;const plan=[0,0,0,0,0,0];
+  for(let c=0;c<pool.length;c++){
+    for(let k=0;k<Math.pow(NIV,6);k++){let t=k;for(let j=0;j<6;j++){plan[j]=t%NIV;t=Math.floor(t/NIV);}
+      const ind=[c,...plan];const f=fitness(ind,pool,prior);
+      if(f>optF){optF=f;opt=ind;} if(!mejorPor[c]||f>mejorPor[c].f)mejorPor[c]={ind,f};}
+  }
+  return{opt,optF,ranking:Object.values(mejorPor).sort((a,b)=>b.f-a.f)};
+}
+function gaParams(){return{pob:+$("ga-pob").value,gen:+$("ga-gen").value,mut:+$("ga-mut").value,seed:+$("ga-seed").value};}
+function renderGenes(ind,pool){
+  const c=pool[ind[0]];
+  $("genes").innerHTML=`<div class="gene" style="border-color:${c.color}"><div class="k">Gen 0 · CEO</div><div class="v" style="color:${c.color};font-size:13px">${esc(c.nombre)}</div></div>`+
+   FRENTES.map((f,i)=>`<div class="gene"><div class="k">${FR_LBL[f]}</div><div class="v">${ind[i+1]}</div><div class="bars4">${[1,2,3].map(n=>`<i class="${ind[i+1]>=n?'on':''}"></i>`).join("")}</div></div>`).join("");
+}
+let gaTimer=null;
+function renderP3(animar){
+  const pool=R.aptos,ga=R.ga,ex=R.ex;
+  clearInterval(gaTimer);
+  const G=ga.hist.mejor.length,labels=Array.from({length:G},(_,i)=>i+1);
+  const c1=mkChart("chGA",{type:"line",data:{labels,datasets:[{label:"Mejor",data:[],borderColor:"#fb923c",pointRadius:0,borderWidth:2.5},{label:"Promedio población",data:[],borderColor:"#93a0b8",borderDash:[5,4],pointRadius:0,borderWidth:1.5},{label:"Óptimo exhaustivo",data:labels.map(()=>ex.optF),borderColor:"#34d39988",borderDash:[2,3],pointRadius:0,borderWidth:1}]},
+    options:{maintainAspectRatio:false,animation:false,scales:{x:{title:{display:true,text:"Generación"},ticks:{maxTicksLimit:12}},y:{title:{display:true,text:"Fitness"}}},plugins:{legend:{position:"bottom"}}}});
+  const c2=mkChart("chGAprop",{type:"line",data:{labels,datasets:pool.map((c,i)=>({label:c.nombre,data:[],borderColor:c.color,backgroundColor:c.color+"55",fill:true,pointRadius:0,borderWidth:1.5}))},
+    options:{maintainAspectRatio:false,animation:false,scales:{x:{ticks:{maxTicksLimit:12}},y:{stacked:true,min:0,max:100,ticks:{callback:v=>v+"%"}}},plugins:{legend:{position:"bottom"}}}});
+  const pintar=g=>{c1.data.datasets[0].data=ga.hist.mejor.slice(0,g);c1.data.datasets[1].data=ga.hist.prom.slice(0,g);pool.forEach((_,i)=>c2.data.datasets[i].data=ga.hist.prop[i].slice(0,g));c1.update();c2.update();renderGenes(ga.hist.best[g-1],pool);$("ga-gen-now").textContent=`· generación ${g}/${G}`;};
+  const fin=()=>{renderGenes(ga.best,pool);$("ga-gen-now").textContent=`· final (${G} generaciones)`;
+    const okv=Math.abs(ex.optF-ga.bestFit)<1e-9;
+    $("ga-verif").innerHTML=`Búsqueda exhaustiva (${(pool.length*Math.pow(NIV,6)).toLocaleString("es")} combinaciones): óptimo = <b>${esc(pool[ex.opt[0]].nombre)}</b>, fitness ${ex.optF.toFixed(4)}. `+(okv?'<span class="ok">✓ El AG encontró el óptimo global.</span>':`<span class="warn">El AG quedó a ${(ex.optF-ga.bestFit).toFixed(4)} del óptimo. Prueba con más generaciones u otra semilla.</span>`);
+    $("badge-p3").className="pill em";$("badge-p3").textContent=`Fitness ${ga.bestFit.toFixed(4)}`;markDone("p3");};
+  if(animar){let g=1;$("ga-verif").innerHTML='<span class="spinner"></span> Evolucionando…';gaTimer=setInterval(()=>{pintar(g);g++;if(g>G){clearInterval(gaTimer);fin();}},Math.max(15,1800/G));}
+  else{pintar(G);fin();}
+  $("tb-p3").innerHTML=ex.ranking.map(({ind,f})=>{const c=pool[ind[0]];return`<tr><td><span class="dot" style="background:${c.color}"></span><b>${esc(c.nombre)}</b></td><td class="mono">${c.ajuste.toFixed(2)}</td>${ind.slice(1).map(v=>`<td class="mono">${v}</td>`).join("")}<td><b>${f.toFixed(4)}</b></td></tr>`;}).join("");
+}
+
+// =====================================================================
+// PASO 3 — TEORÍA DE JUEGOS
+// =====================================================================
+const EI=["S1 Foundry abierta","S2 Atacar IA","S3 Defender CPU/costos"],EN=["N1 Cooperar","N2 Ignorar a Intel"],EA=["A1 Guerra de precios","A2 Foco en GPU IA"];
+function matrizPagos(c){const cF=competencia(c,"foundry")/10,cIA=competencia(c,"aceleradores_ia")/10,cC=competencia(c,"eficiencia_costos")/10;
+  return{"S1|N1":[6+4*cF,7],"S1|N2":[3.5+2*cF,6],"S2|N1":[2+5*cIA,4],"S2|N2":[1+5*cIA,8],"S3|N1":[4+3*cC,6],"S3|N2":[4+2*cC,7]};}
+const sk=s=>s.slice(0,2),nk=n=>n.slice(0,2);
+function nash(P){const eq=[];for(const s of EI)for(const n of EN){const[ui,un]=P[sk(s)+"|"+nk(n)];if(EI.every(s2=>ui>=P[sk(s2)+"|"+nk(n)][0])&&EN.every(n2=>un>=P[sk(s)+"|"+nk(n2)][1]))eq.push([s,n,ui,un]);}return eq;}
+function efectoAMD(s,a,c){if(a.startsWith("A1"))return{S1:-0.5,S2:-1.0,S3:-2.5+1.5*competencia(c,"eficiencia_costos")/10}[sk(s)];return{S1:0,S2:-2.5+1.5*competencia(c,"aceleradores_ia")/10,S3:0.5}[sk(s)];}
+function minimaxAB(c,P){
+  const hojas={},nodosN={},nodosS={};
+  let alfa=-Infinity,beta=Infinity,mejor=-Infinity,jug=null;
+  for(const s of EI){
+    let b1=beta,peorN=Infinity;
+    for(const n of EN){
+      let b2=b1,peorA=Infinity;
+      for(const a of EA){
+        const v=P[sk(s)+"|"+nk(n)][0]+efectoAMD(s,a,c);hojas[`${sk(s)}|${nk(n)}|${a.slice(0,2)}`]=v;
+        peorA=Math.min(peorA,v);b2=Math.min(b2,peorA);if(alfa>=b2)break;
+      }
+      nodosN[`${sk(s)}|${nk(n)}`]=peorA;
+      peorN=Math.min(peorN,peorA);b1=Math.min(b1,peorN);if(alfa>=b1)break;
+    }
+    nodosS[sk(s)]=peorN;
+    if(peorN>mejor){mejor=peorN;jug=s;}alfa=Math.max(alfa,mejor);if(alfa>=beta)break;
+  }
+  return{valor:mejor,jugada:jug,hojas,nodosN,nodosS};
+}
+function renderTree(c,m){
+  const W=760,y=[30,115,200,285],svg=[];
+  const leafX=i=>100+i*(W-130)/11;
+  const nodes=[];
+  EI.forEach((s,si)=>{const nx=[];EN.forEach((n,ni)=>{const lx=[];EA.forEach((a,ai)=>{const idx=si*4+ni*2+ai;lx.push(leafX(idx));});nx.push((lx[0]+lx[1])/2);});
+    nodes.push({s,si,x:(nx[0]+nx[1])/2,nx});});
+  const rootX=(leafX(0)+leafX(11))/2;
+  const line=(x1,y1,x2,y2,on)=>svg.push(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${on?'#64748b':'#2a3550'}" stroke-width="${on?1.5:1}" ${on?'':'stroke-dasharray="3 3"'}/>`);
+  const nodo=(x,yy,txt,val,fill,stroke,lbl)=>{svg.push(`<circle cx="${x}" cy="${yy}" r="17" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>`);svg.push(`<text x="${x}" y="${yy+4}" text-anchor="middle" font-size="10" font-weight="700" fill="#e6ebf5">${val}</text>`);if(lbl)svg.push(`<text x="${x}" y="${yy-23}" text-anchor="middle" font-size="10" fill="#93a0b8">${lbl}</text>`);};
+  nodes.forEach(nd=>{const kS=sk(nd.s),evS=kS in m.nodosS;line(rootX,y[0]+17,nd.x,y[1]-17,evS);
+    nd.nx.forEach((x,ni)=>{const kN=kS+"|"+nk(EN[ni]),evN=kN in m.nodosN;if(evS)line(nd.x,y[1]+17,x,y[2]-17,evN);else line(nd.x,y[1]+17,x,y[2]-17,false);
+      EA.forEach((a,ai)=>{const lx=leafX(nd.si*4+ni*2+ai);const kL=kN+"|"+a.slice(0,2);line(x,y[2]+17,lx,y[3]-14,kL in m.hojas);});});});
+  svg.push(`<text x="10" y="${y[0]+4}" font-size="10" fill="#38bdf8" font-weight="700">MAX Intel</text>`);
+  svg.push(`<text x="10" y="${y[1]+4}" font-size="10" fill="#fb7185" font-weight="700">MIN NVIDIA</text>`);
+  svg.push(`<text x="10" y="${y[2]+4}" font-size="10" fill="#fb7185" font-weight="700">MIN AMD</text>`);
+  nodo(rootX,y[0],"",m.valor.toFixed(2),"#0e3a52","#38bdf8","");
+  nodes.forEach(nd=>{const kS=sk(nd.s),ev=kS in m.nodosS,best=nd.s===m.jugada;
+    nodo(nd.x,y[1],"",ev?m.nodosS[kS].toFixed(2):"✂",best?"#0f3b2e":"#151f36",best?"#34d399":(ev?"#64748b":"#2a3550"),nd.s.replace(/^S\d /,kS+" "));
+    nd.nx.forEach((x,ni)=>{const kN=kS+"|"+nk(EN[ni]),ev2=kN in m.nodosN;nodo(x,y[2],"",ev2?m.nodosN[kN].toFixed(2):"✂","#151f36",ev2?"#64748b":"#2a3550",nk(EN[ni]));
+      EA.forEach((a,ai)=>{const lx=leafX(nd.si*4+ni*2+ai),kL=kN+"|"+a.slice(0,2),ev3=kL in m.hojas;
+        svg.push(`<rect x="${lx-19}" y="${y[3]-14}" width="38" height="24" rx="6" fill="${ev3?'#1b2742':'#0d1424'}" stroke="${ev3?'#64748b':'#2a3550'}"/>`);
+        svg.push(`<text x="${lx}" y="${y[3]+3}" text-anchor="middle" font-size="10" font-weight="600" fill="${ev3?'#e6ebf5':'#475569'}">${ev3?m.hojas[kL].toFixed(2):'podado'}</text>`);
+        svg.push(`<text x="${lx}" y="${y[3]+24}" text-anchor="middle" font-size="9" fill="#5f6d88">${a.slice(0,2)}</text>`);});});});
+  $("gt-tree").innerHTML=svg.join("");
+}
+function renderP4(idx){
+  R.gtSel=idx??R.gtSel??0;
+  const fin=R.finalistas;
+  $("gt-tabs").innerHTML=fin.map((c,i)=>`<button class="${i===R.gtSel?'on':''}" data-i="${i}"><span class="dot" style="background:${c.color}"></span>${esc(c.nombre)}</button>`).join("");
+  document.querySelectorAll("#gt-tabs button").forEach(b=>b.addEventListener("click",()=>renderP4(+b.dataset.i)));
+  const c=fin[R.gtSel],P=c.pagos,eq=c.nash;
+  const isN=(s,n)=>eq.some(e=>e[0]===s&&e[1]===n);
+  $("gt-matrix").innerHTML=`<thead><tr><th>Intel \\ NVIDIA</th>${EN.map(n=>`<th>${n}</th>`).join("")}</tr></thead><tbody>`+EI.map(s=>`<tr><th style="text-align:left">${s}</th>${EN.map(n=>{const[u,v]=P[sk(s)+"|"+nk(n)];return`<td class="mono ${isN(s,n)?'nash':''}">(${u.toFixed(2)}, ${v})</td>`;}).join("")}</tr>`).join("")+"</tbody>";
+  const tot=Object.keys(c.mm.hojas).length;
+  $("gt-summary").innerHTML=`<p style="margin:10px 0 4px"><b>Equilibrio(s) de Nash:</b> ${eq.length?eq.map(e=>`(${esc(e[0])}, ${esc(e[1])})`).join(" y "):"sin equilibrio puro"}</p>
+   <p style="margin:0"><b>Estrategia Minimax:</b> <span class="ok">${esc(c.mm.jugada)}</span> · valor garantizado <b>${c.mm.valor.toFixed(2)}</b> · hojas evaluadas ${tot}/12 (${12-tot} podadas)</p>`;
+  renderTree(c,c.mm);
+  markDone("p4");
+}
+
+// =====================================================================
+// DECISIÓN + INFORME
+// =====================================================================
+const norm=v=>{const mx=Math.max(...v),mn=Math.min(...v);return v.map(x=>mx===mn?1:(x-mn)/(mx-mn));};
+function renderDecision(){
+  const f=R.finalistas,fin=[...f].sort((a,b)=>b.puntaje-a.puntaje);
+  mkChart("chFinal",{type:"bar",data:{labels:fin.map(c=>c.nombre),datasets:[
+    {label:"0.55·Fitness AG",data:fin.map(c=>c.cF),backgroundColor:"#fb923c"},
+    {label:"0.30·Minimax",data:fin.map(c=>c.cM),backgroundColor:"#a78bfa"},
+    {label:"0.15·Disponibilidad",data:fin.map(c=>c.cD),backgroundColor:"#34d399"}]},
+    options:{indexAxis:"y",maintainAspectRatio:false,scales:{x:{stacked:true,max:1,title:{display:true,text:"Puntaje final"}},y:{stacked:true}},plugins:{legend:{position:"bottom"}}}});
+  $("tb-dec").innerHTML=fin.map((c,i)=>`<tr><td>${i===0?"🏆 ":""}<span class="dot" style="background:${c.color}"></span><b>${esc(c.nombre)}</b></td><td>${c.ajuste.toFixed(2)}</td><td>${c.fit.toFixed(4)}</td><td>${c.mm.valor.toFixed(2)}</td><td>${(c.disponibilidad*100).toFixed(0)}%</td><td><b style="color:var(--em)">${c.puntaje.toFixed(3)}</b></td></tr>`).join("");
+  markDone("dec");
+}
+function renderFinal(){
+  const c=R.ceo,fin=[...R.finalistas].sort((a,b)=>b.puntaje-a.puntaje),plan=c.plan;
+  const desc=R.p1.resultados.filter(r=>!r.apto).map(r=>r.nombre);
+  const alert=[...R.p1.resultados.find(r=>r.id===c.id).H].filter(h=>h.startsWith("riesgo")).map(h=>h.replace("riesgo_",""));
+  const planB=fin[1];
+  $("final-body").innerHTML=`
+  <div class="winner" style="margin-bottom:16px">
+    <div class="row" style="justify-content:space-between"><span class="pill em">CEO recomendado para ${esc(ANALISIS.empresa||"Intel")}</span><span class="mono small muted">puntaje ${c.puntaje.toFixed(3)}</span></div>
+    <div class="name" style="margin-top:8px">${esc(c.nombre)}</div>
+    <p class="muted" style="margin:2px 0 12px">${esc(c.cargo)}</p>
+    <div class="grid g4">
+      <div class="box kpi"><div class="l">Ajuste estratégico</div><div class="v" style="color:var(--sky)">${c.ajuste.toFixed(2)}</div><div class="s">de 10, con los pesos del LLM</div></div>
+      <div class="box kpi"><div class="l">Fitness AG</div><div class="v" style="color:var(--ora)">${c.fit.toFixed(3)}</div></div>
+      <div class="box kpi"><div class="l">Valor Minimax</div><div class="v" style="color:var(--vio)">${c.mm.valor.toFixed(2)}</div><div class="s">${esc(c.mm.jugada)}</div></div>
+      <div class="box kpi"><div class="l">Disponibilidad</div><div class="v" style="color:var(--em)">${(c.disponibilidad*100).toFixed(0)}%</div><div class="s">${alert.length?"alertas: "+alert.join(", "):"sin alertas"}</div></div>
+    </div>
+  </div>
+  <div class="grid g2" style="margin-bottom:16px">
+    <div class="box"><h3>Por qué resuelve la problemática</h3>
+      <p class="small" style="color:#cfd6e4">${esc(ANALISIS.problematica_central||"")}</p>
+      <p class="small" style="margin-bottom:0">Es el finalista con mejor equilibrio entre ajuste a la estrategia (<b>${esc(ANALISIS.estrategia_reclutamiento?.nombre||"")}</b>), robustez competitiva frente a NVIDIA y AMD y probabilidad de aceptar el cargo.</p></div>
+    <div class="box"><h3>Mandato de 100 días (algoritmo genético)</h3>
+      <div class="tablewrap"><table><thead><tr><th>Frente</th><th>Intensidad</th><th>Prioridad del LLM</th></tr></thead><tbody>${FRENTES.map((f,i)=>`<tr><td>${FR_LBL[f]}</td><td style="color:var(--ora);letter-spacing:2px">${"●".repeat(plan[i])}${"○".repeat(3-plan[i])}</td><td class="mono">${(CONFIG.prioridades[f]*100).toFixed(0)}%</td></tr>`).join("")}</tbody></table></div>
+      <p class="small" style="margin:10px 0 0"><b>Estrategia competitiva (Minimax):</b> ${esc(c.mm.jugada)}</p></div>
+  </div>
+  <div class="grid g3">${fin.map((f,i)=>`<div class="box" style="${i===0?'border-color:#34d39966':''}"><div class="row" style="justify-content:space-between"><h3 style="margin:0"><span class="dot" style="background:${f.color}"></span>${esc(f.nombre)}</h3><span class="pill ${i===0?'em':'dim'}">#${i+1}</span></div>
+    <span class="label" style="color:var(--em);margin-top:10px">Lo que logró</span><ul class="clean small">${li(f.logros)}</ul>
+    <span class="label" style="color:var(--rose);margin-top:8px">Lo que no logró</span><ul class="clean small">${li(f.no)}</ul></div>`).join("")}</div>
+  <div class="notice" style="margin-top:16px">Plan B: <b>${esc(planB?.nombre||"—")}</b>. Descartados en el Paso 1: ${desc.map(esc).join(", ")||"ninguno"}. ${c.disponibilidad<0.3?"El candidato recomendado hoy dirige otra empresa: la negociación es el principal riesgo de ejecución.":""}</div>`;
+  markDone("final");
+}
+
+// =====================================================================
+// ORQUESTADOR
+// =====================================================================
+function ejecutarTodo(animarGA){
+  if(!CONFIG)return;
+  R.p1=paso1(CONFIG.requisitos);
+  R.aptos=R.p1.resultados.filter(r=>r.apto).map(r=>{const c={...r};c.ajuste=ajusteEstrategico(c,CONFIG.pesos);return c;});
+  R.ex=exhaustivo(R.aptos,CONFIG.prioridades);
+  R.ga=runGA(R.aptos,CONFIG.prioridades,gaParams());
+  R.finalistas=R.ex.ranking.slice(0,3).map(({ind,f})=>{const c=R.aptos[ind[0]];c.plan=ind.slice(1);c.fit=f;c.pagos=matrizPagos(c);c.nash=nash(c.pagos);c.mm=minimaxAB(c,c.pagos);return c;});
+  const nf=norm(R.finalistas.map(c=>c.fit)),nv=norm(R.finalistas.map(c=>c.mm.valor));
+  R.finalistas.forEach((c,i)=>{c.cF=0.55*nf[i];c.cM=0.30*nv[i];c.cD=0.15*c.disponibilidad;c.puntaje=c.cF+c.cM+c.cD;});
+  R.ceo=[...R.finalistas].sort((a,b)=>b.puntaje-a.puntaje)[0];
+  renderP1();renderRadar(R.sel??0);renderP3(animarGA);renderP4(Math.min(R.gtSel??0,R.finalistas.length-1));renderDecision();renderFinal();
+}
+
+// =====================================================================
+// INICIO
+// =====================================================================
+mkChart("chIntelNvidia",{type:"bar",data:{labels:["Ingresos del trimestre (US$ B)","Margen bruto (%)"],datasets:[{label:"Intel",data:[16.1,40.4],backgroundColor:"#38bdf8"},{label:"NVIDIA",data:[96.2,75.0],backgroundColor:"#34d399"}]},options:{maintainAspectRatio:false,plugins:{legend:{position:"bottom"}}}});
+renderCandidatos();renderRadar(0);
+$("btn-demo").addEventListener("click",()=>{$("log-llm").textContent="";logLLM("Cargando respuesta JSON de demostración…");logLLM("✓ JSON validado: requisitos, 8 pesos y 6 prioridades normalizados");cargarAnalisis(JSON.parse(JSON.stringify(ANALISIS_DEMO)),"Demostración");});
+$("btn-live").addEventListener("click",consultarGemini);
+$("btn-run").addEventListener("click",()=>{ejecutarTodo(true);document.getElementById("p1").scrollIntoView();});
+$("btn-ga").addEventListener("click",()=>{if(!CONFIG)return;R.ga=runGA(R.aptos,CONFIG.prioridades,gaParams());renderP3(true);});
+["ga-pob","ga-gen","ga-mut","ga-seed"].forEach(id=>$(id).addEventListener("input",()=>$(id+"-v").textContent=$(id).value));
+</script>
+</body>
+</html>
