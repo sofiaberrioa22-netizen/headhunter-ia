@@ -147,21 +147,14 @@ def _valla(x, y, ancho=210, alto=104):
         f"filter='url(#resplandor)'/>" for n, (bx, by) in enumerate(bombillos))
     # contenido
     cx = x + ancho / 2
-    lupa_x, lupa_y = x + 40, y + 57
     contenido = (
         f"<rect x='{x}' y='{y}' width='{ancho}' height='{alto}' rx='8' fill='#1c1917'/>"
         f"<rect x='{x + 13}' y='{y + 13}' width='{ancho - 26}' height='{alto - 26}' rx='4' fill='url(#valla)'/>"
         f"<rect x='{x + 13}' y='{y + 13}' width='{ancho - 26}' height='{(alto - 26) * .45:.0f}' rx='4' fill='#fff' opacity='.12'/>"
-        f"<text x='{cx}' y='{y + 33}' text-anchor='middle' font-size='12' font-weight='800' letter-spacing='5' "
+        f"<text x='{cx}' y='{y + 37}' text-anchor='middle' font-size='13' font-weight='800' letter-spacing='6' "
         f"fill='#78350f'>SE BUSCA</text>"
-        f"<circle cx='{lupa_x}' cy='{lupa_y}' r='11' fill='#fff7ed' fill-opacity='.55' stroke='#1c1917' stroke-width='4'/>"
-        f"<line x1='{lupa_x + 8}' y1='{lupa_y + 8}' x2='{lupa_x + 17}' y2='{lupa_y + 17}' stroke='#1c1917' stroke-width='5' "
-        f"stroke-linecap='round'/>"
-        f"<text x='{cx + 16}' y='{y + 72}' text-anchor='middle' font-size='40' font-weight='900' letter-spacing='2' "
-        f"fill='#1c1917'>CEO</text>"
-        f"<rect x='{x + 13}' y='{y + alto - 30}' width='{ancho - 26}' height='17' fill='#1c1917' opacity='.88'/>"
-        f"<text x='{cx}' y='{y + alto - 18}' text-anchor='middle' font-size='10.5' font-weight='700' letter-spacing='.5' "
-        f"fill='#fbbf24'>LÍDER EN IA + MANUFACTURA</text>")
+        f"<text x='{cx}' y='{y + 82}' text-anchor='middle' font-size='46' font-weight='900' letter-spacing='3' "
+        f"fill='#1c1917'>CEO</text>")
     return (f"<g class='letrero'>{patas}{grosor}{contenido}{luces}{focos}</g>")
 
 
