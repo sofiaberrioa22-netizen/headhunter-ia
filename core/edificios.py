@@ -18,7 +18,10 @@ _ESTILO = """<style>
   @keyframes tw {0%, 100% {opacity: 1;} 50% {opacity: .35;}}
   .baliza {animation: baliza 1.4s steps(2, end) infinite;}
   @keyframes baliza {0% {opacity: 1;} 100% {opacity: .15;}}
-  .letrero {animation: aparecer 1s 1.4s both;}
+  .letrero {animation: cae 1.1s 1.2s cubic-bezier(.3,1.6,.5,1) both;}
+  @keyframes cae {from {opacity: 0; transform: translateY(-40px);} to {opacity: 1; transform: none;}}
+  .cono {animation: cono 2.4s ease-in-out infinite;}
+  @keyframes cono {0%, 100% {opacity: .85;} 50% {opacity: .55;}}
   .luz {animation: luz .9s steps(2, end) infinite;} .luz.par {animation-delay: .45s;}
   @keyframes luz {0% {opacity: 1;} 100% {opacity: .2;}}
   .haz {animation: fluye 1.6s linear infinite;}
@@ -109,6 +112,59 @@ def _racks(F, largo, alto, rnd):
     return out
 
 
+def _valla(x, y, ancho=210, alto=104):
+    """Valla publicitaria con marco en 3D, reflectores, bombillos alternos y la lupa del headhunter."""
+    prof = 10  # grosor del marco hacia atrás (en perspectiva)
+    # estructura: dos patas con refuerzos cruzados
+    pie_y = y + alto + 62
+    patas = ""
+    for px in (x + 46, x + ancho - 54):
+        patas += f"<rect x='{px}' y='{y + alto}' width='8' height='{pie_y - y - alto}' fill='#334155'/>"
+    patas += (f"<line x1='{x + 54}' y1='{y + alto + 8}' x2='{x + ancho - 54}' y2='{pie_y - 6}' stroke='#475569' stroke-width='3'/>"
+              f"<line x1='{x + ancho - 54}' y1='{y + alto + 8}' x2='{x + 54}' y2='{pie_y - 6}' stroke='#475569' stroke-width='3'/>"
+              f"<ellipse cx='{x + ancho / 2}' cy='{pie_y + 2}' rx='{ancho * 0.45:.0f}' ry='7' fill='#000' opacity='.35'/>")
+    # grosor del marco (lado y techo en perspectiva)
+    grosor = (f"<polygon points='{x + ancho},{y} {x + ancho + prof},{y - prof * .6} {x + ancho + prof},{y + alto - prof * .6} "
+              f"{x + ancho},{y + alto}' fill='#0f172a'/>"
+              f"<polygon points='{x},{y} {x + prof},{y - prof * .6} {x + ancho + prof},{y - prof * .6} {x + ancho},{y}' fill='#1e293b'/>")
+    # reflectores con conos de luz
+    focos = ""
+    for fx in (x + 52, x + ancho - 52):
+        focos += (f"<polygon class='cono' points='{fx - 6},{y - 20} {fx + 6},{y - 20} {fx + 46},{y + alto - 14} {fx - 46},{y + alto - 14}' "
+                  f"fill='url(#luzfoco)'/>"
+                  f"<line x1='{fx}' y1='{y - 2}' x2='{fx}' y2='{y - 18}' stroke='#64748b' stroke-width='3'/>"
+                  f"<rect x='{fx - 9}' y='{y - 28}' width='18' height='10' rx='3' fill='#1e293b' stroke='#94a3b8'/>"
+                  f"<rect x='{fx - 7}' y='{y - 20}' width='14' height='3' fill='#fef9c3'/>")
+    # bombillos en todo el borde, encendidos en forma alterna
+    bombillos = []
+    paso = 15
+    for t in range(0, ancho - 8, paso):
+        bombillos += [(x + 8 + t, y + 7), (x + 8 + t, y + alto - 7)]
+    for t in range(paso + 7, alto - 14, paso):
+        bombillos += [(x + 7, y + t), (x + ancho - 7, y + t)]
+    luces = "".join(
+        f"<circle class='luz {'par' if n % 2 else ''}' cx='{bx:.0f}' cy='{by:.0f}' r='3.4' fill='#fef3c7' "
+        f"filter='url(#resplandor)'/>" for n, (bx, by) in enumerate(bombillos))
+    # contenido
+    cx = x + ancho / 2
+    lupa_x, lupa_y = x + 40, y + 57
+    contenido = (
+        f"<rect x='{x}' y='{y}' width='{ancho}' height='{alto}' rx='8' fill='#1c1917'/>"
+        f"<rect x='{x + 13}' y='{y + 13}' width='{ancho - 26}' height='{alto - 26}' rx='4' fill='url(#valla)'/>"
+        f"<rect x='{x + 13}' y='{y + 13}' width='{ancho - 26}' height='{(alto - 26) * .45:.0f}' rx='4' fill='#fff' opacity='.12'/>"
+        f"<text x='{cx}' y='{y + 33}' text-anchor='middle' font-size='12' font-weight='800' letter-spacing='5' "
+        f"fill='#78350f'>SE BUSCA</text>"
+        f"<circle cx='{lupa_x}' cy='{lupa_y}' r='11' fill='#fff7ed' fill-opacity='.55' stroke='#1c1917' stroke-width='4'/>"
+        f"<line x1='{lupa_x + 8}' y1='{lupa_y + 8}' x2='{lupa_x + 17}' y2='{lupa_y + 17}' stroke='#1c1917' stroke-width='5' "
+        f"stroke-linecap='round'/>"
+        f"<text x='{cx + 16}' y='{y + 72}' text-anchor='middle' font-size='40' font-weight='900' letter-spacing='2' "
+        f"fill='#1c1917'>CEO</text>"
+        f"<rect x='{x + 13}' y='{y + alto - 30}' width='{ancho - 26}' height='17' fill='#1c1917' opacity='.88'/>"
+        f"<text x='{cx}' y='{y + alto - 18}' text-anchor='middle' font-size='10.5' font-weight='700' letter-spacing='.5' "
+        f"fill='#fbbf24'>LÍDER EN IA + MANUFACTURA</text>")
+    return (f"<g class='letrero'>{patas}{grosor}{contenido}{luces}{focos}</g>")
+
+
 def edificios_svg():
     rnd = random.Random(7)
     estrellas = "".join(
@@ -159,17 +215,8 @@ def edificios_svg():
     it += chip_it
     techo_i = _pt(Fi, 80, 55, 115)
 
-    # Cartel "SE BUSCA CEO" frente a Intel, con luces intermitentes en el borde
-    bx, by = 190, 335
-    puntos_luz = [(bx + 8 + t * 16, by + 4) for t in range(10)] + [(bx + 8 + t * 16, by + 52) for t in range(10)]
-    luces = "".join(
-        f"<circle class='luz {'par' if k % 2 else ''}' cx='{x:.0f}' cy='{y:.0f}' r='3.2' fill='#fde68a'/>"
-        for k, (x, y) in enumerate(puntos_luz))
-    letrero = (f"<g class='letrero'><rect x='{bx + 30}' y='{by + 56}' width='8' height='52' fill='#475569'/>"
-               f"<rect x='{bx + 122}' y='{by + 56}' width='8' height='52' fill='#475569'/>"
-               f"<rect x='{bx}' y='{by}' width='160' height='56' rx='8' fill='#fbbf24' stroke='#78350f' stroke-width='3'/>"
-               f"{luces}<text x='{bx + 80}' y='{by + 36}' text-anchor='middle' font-size='21' font-weight='900' "
-               f"fill='#1c1917' letter-spacing='1'>SE BUSCA CEO</text></g>")
+    # Valla "SE BUSCA CEO" frente a Intel: reflectores, bombillos de marquesina y lupa de headhunter
+    letrero = _valla(118, 286)
 
     # Etiquetas de los chips insignia
     def etiqueta_chip(x, y, titulo, detalle, color, destino):
@@ -210,6 +257,10 @@ def edificios_svg():
       <stop offset='1' stop-color='#0a1124'/></linearGradient>
     <radialGradient id='halo' cx='.72' cy='.35' r='.45'><stop offset='0' stop-color='#76B900' stop-opacity='.35'/>
       <stop offset='1' stop-color='#76B900' stop-opacity='0'/></radialGradient>
+    <linearGradient id='valla' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#fde68a'/>
+      <stop offset='1' stop-color='#f59e0b'/></linearGradient>
+    <linearGradient id='luzfoco' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#fef9c3' stop-opacity='.55'/>
+      <stop offset='1' stop-color='#fef9c3' stop-opacity='0'/></linearGradient>
     <filter id='resplandor'><feGaussianBlur stdDeviation='6' result='b'/><feMerge><feMergeNode in='b'/>
       <feMergeNode in='SourceGraphic'/></feMerge></filter>
   </defs>
