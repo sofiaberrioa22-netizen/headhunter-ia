@@ -73,31 +73,3 @@ def minimax_alfa_beta(c, pagos):
     valor, jugada = nodo(0)
     return {"valor": valor, "jugada": jugada, **reg}
 
-
-def arbol_dot(mm):
-    """Árbol de juego en formato DOT; los nodos podados aparecen en gris punteado."""
-    L = ['digraph G {', 'rankdir=TB; bgcolor="transparent"; nodesep=0.25; ranksep=0.5;',
-         'node [fontname="Helvetica", fontsize=12, style="filled", penwidth=1.2];',
-         'edge [color="#94a3b8", arrowsize=0.5];',
-         f'root [label="Intel (MAX)\\n{mm["valor"]:.2f}", shape=box, fillcolor="#dbeafe", color="#2563eb"];']
-    for i, s in enumerate(EST_INTEL):
-        ev = s in mm["intel"]
-        mejor = s == mm["jugada"]
-        lbl = f'{s[:2]}\\n{mm["intel"][s]:.2f}' if ev else f'{s[:2]}\\npodado'
-        fill, col = ("#dcfce7", "#059669") if mejor else (("#f1f5f9", "#64748b") if ev else ("#ffffff", "#cbd5e1"))
-        L.append(f's{i} [label="{lbl}", shape=ellipse, fillcolor="{fill}", color="{col}", fontcolor="{"#0f172a" if ev else "#94a3b8"}"];')
-        L.append(f'root -> s{i} [style={"solid" if ev else "dashed"}];')
-        for j, n in enumerate(EST_NVIDIA):
-            ev2 = (s, n) in mm["nvidia"]
-            lbl2 = f'{n[:2]}\\n{mm["nvidia"][(s, n)]:.2f}' if ev2 else f'{n[:2]}\\npodado'
-            L.append(f's{i}n{j} [label="{lbl2}", shape=ellipse, fillcolor="{"#fef2f2" if ev2 else "#ffffff"}", '
-                     f'color="{"#dc2626" if ev2 else "#cbd5e1"}", fontcolor="{"#0f172a" if ev2 else "#94a3b8"}"];')
-            L.append(f's{i} -> s{i}n{j} [style={"solid" if ev2 else "dashed"}];')
-            for k, a in enumerate(EST_AMD):
-                ev3 = (s, n, a) in mm["hojas"]
-                lbl3 = f'{a[:2]}\\n{mm["hojas"][(s, n, a)]:.2f}' if ev3 else f'{a[:2]}\\npodado'
-                L.append(f's{i}n{j}a{k} [label="{lbl3}", shape=box, fillcolor="{"#f8fafc" if ev3 else "#ffffff"}", '
-                         f'color="{"#64748b" if ev3 else "#e2e8f0"}", fontcolor="{"#0f172a" if ev3 else "#cbd5e1"}", fontsize=11];')
-                L.append(f's{i}n{j} -> s{i}n{j}a{k} [style={"solid" if ev3 else "dashed"}];')
-    L.append("}")
-    return "\n".join(L)

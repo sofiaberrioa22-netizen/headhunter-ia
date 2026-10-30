@@ -24,11 +24,15 @@ nav = st.navigation(paginas)
 
 with st.sidebar:
     res = resultados()
-    st.caption("ESTADO DEL ANÁLISIS")
-    st.markdown(f"**Filtro:** {'Clásico' if st.session_state.get('modo') == MODO_CLASICO else 'Lógica difusa'}  \n"
-                f"**Pasan el filtro:** {len(res['pool'])} de 7  \n"
-                f"**Recomendado:** {res['ceo']['nombre'] if 'ceo' in res else '—'}")
-    st.divider()
+    filtro = "Clásico" if st.session_state.get("modo") == MODO_CLASICO else "Lógica difusa"
+    st.markdown(
+        "<div class='sb-brand'><div class='logo'>H</div><div><b>Headhunter IA</b><small>El próximo CEO de Intel</small>"
+        "</div></div>", unsafe_allow_html=True)
+    st.markdown(
+        f"<div class='sb-card'><div class='r'><span>Filtro</span><b>{filtro}</b></div>"
+        f"<div class='r'><span>Pasan el filtro</span><b>{len(res['pool'])} de 7</b></div>"
+        f"<div class='r'><span>Recomendado</span><b>{res['ceo']['nombre'] if 'ceo' in res else '—'}</b></div></div>",
+        unsafe_allow_html=True)
     st.caption("Fundamentos de IA · " + ", ".join(INTEGRANTES))
 
 nav.run()

@@ -1,10 +1,10 @@
-import pandas as pd
 import streamlit as st
 
-from core.juegos import EST_AMD, EST_INTEL, EST_NVIDIA, arbol_dot
-from core.ui import encabezado, resultados, siguiente
+from core import graficas
+from core.juegos import EST_AMD
+from core.ui import MAL, MARCA, OK, VIOLETA, chip, encabezado, grafica, kpis, resultados, siguiente
 
-encabezado("PASO 5 · PRUEBA DE ESTRÉS", "Reacción de la competencia",
+encabezado(5, "Prueba de estrés", "Reacción de la competencia",
            "Un CEO no decide en el vacío: NVIDIA y AMD reaccionan. Con teoría de juegos medimos qué tan bien le iría a "
            "Intel con cada finalista frente a sus rivales.")
 
@@ -16,50 +16,51 @@ fin = res["finalistas"]
 
 a, b = st.columns(2)
 with a.container(border=True):
-    st.markdown("**Juego simultáneo · Intel vs. NVIDIA**")
+    st.markdown(chip("Juego simultáneo", MARCA), unsafe_allow_html=True)
+    st.markdown("#### Intel vs. NVIDIA")
     st.markdown("Ambos deciden a la vez. Buscamos el **equilibrio de Nash**: la combinación en la que ninguno gana "
                 "cambiando solo su decisión.")
 with b.container(border=True):
-    st.markdown("**Juego secuencial · Intel → NVIDIA → AMD**")
-    st.markdown("Intel mueve primero y los rivales responden de la peor forma para Intel. **Minimax con poda "
-                "Alfa-Beta** da el valor que Intel tiene garantizado con ese CEO.")
+    st.markdown(chip("Juego secuencial", VIOLETA), unsafe_allow_html=True)
+    st.markdown("#### Intel → NVIDIA → AMD")
+    st.markdown("Intel mueve primero y los rivales responden de la peor forma para Intel. **Minimax con poda Alfa-Beta** "
+                "da el valor que Intel tiene garantizado con ese CEO.")
 
+st.write("")
 nombres = [c["nombre"] for c in fin]
 sel = st.pills("Finalista", nombres, default=nombres[0]) or nombres[0]
 c = next(x for x in fin if x["nombre"] == sel)
 mm = c["minimax"]
+evaluadas = len(mm["hojas"])
 
-izq, der = st.columns([1.2, 1])
-with izq:
-    st.markdown("**Matriz de pagos** (Intel, NVIDIA)")
-    nash = {(s, n) for s, n, *_ in c["nash"]}
-    df = pd.DataFrame([[f"{c['pagos'][(s, n)][0]:.2f} , {c['pagos'][(s, n)][1]}" for n in EST_NVIDIA] for s in EST_INTEL],
-                      index=EST_INTEL, columns=EST_NVIDIA)
-    estilo_celdas = pd.DataFrame([["background-color:#dcfce7;color:#065f46;font-weight:700" if (s, n) in nash else ""
-                                   for n in EST_NVIDIA] for s in EST_INTEL], index=EST_INTEL, columns=EST_NVIDIA)
-    st.dataframe(df.style.apply(lambda _: estilo_celdas, axis=None), use_container_width=True)
-    st.caption("En verde, los equilibrios de Nash. Los pagos de Intel crecen con la competencia del CEO en foundry, IA "
-               "y costos. Son pagos pedagógicos, como en la clase 07.")
+kpis([
+    ("Valor garantizado", f"{mm['valor']:.2f}", "lo mínimo que Intel asegura", VIOLETA),
+    ("Mejor jugada de Intel", mm["jugada"].split(" ", 1)[1], mm["jugada"].split(" ", 1)[0], OK),
+    ("Equilibrios de Nash", str(len(c["nash"])), "en estrategias puras", MARCA),
+    ("Ramas podadas", f"{12 - evaluadas} de 12", "gracias a Alfa-Beta", MAL),
+])
+
+izq, der = st.columns([1, 1], gap="large")
+with izq.container(border=True):
+    st.markdown("**Matriz de pagos** (Intel , NVIDIA)")
+    grafica(graficas.matriz_pagos(c["pagos"], c["nash"]))
+    st.caption("Recuadro verde = equilibrio de Nash. Los pagos de Intel crecen con la competencia del CEO en foundry, IA y "
+               "costos. Son pagos pedagógicos, como en la clase 07.")
 with der:
-    eq = " y ".join(f"({s}, {n})" for s, n, *_ in c["nash"]) or "sin equilibrio en estrategias puras"
-    with st.container(border=True):
-        st.markdown(f"**Equilibrio(s) de Nash**  \n{eq}")
-    with st.container(border=True):
-        st.metric("Valor garantizado (Minimax)", f"{mm['valor']:.2f}")
-        evaluadas = len(mm["hojas"])
-        st.markdown(f"Mejor jugada de Intel: **{mm['jugada']}**  \nHojas evaluadas: {evaluadas} de 12 "
-                    f"(la poda evitó {12 - evaluadas}).")
+    st.markdown("**Comparación de los finalistas** · valor garantizado con cada uno")
+    for x in fin:
+        with st.container(border=True):
+            st.markdown(f"<div style='display:flex;justify-content:space-between;align-items:center'>"
+                        f"<div><span style='display:inline-block;width:10px;height:10px;border-radius:50%;"
+                        f"background:{x['color']};margin-right:8px'></span><b>{x['nombre']}</b><br>"
+                        f"<span class='muted' style='font-size:0.85rem'>{x['minimax']['jugada']} · {len(x['nash'])} "
+                        f"equilibrio(s) de Nash</span></div><div style='font-size:1.7rem;font-weight:800'>"
+                        f"{x['minimax']['valor']:.2f}</div></div>", unsafe_allow_html=True)
 
-st.markdown("**Árbol de decisión con poda Alfa-Beta**")
-st.graphviz_chart(arbol_dot(mm), use_container_width=True)
-st.caption("S = estrategias de Intel, N = NVIDIA, A = AMD (" + ", ".join(EST_AMD) + "). En verde, la jugada "
-           "elegida; en gris punteado, las ramas podadas.")
+with st.container(border=True):
+    st.markdown("**Árbol de decisión con poda Alfa-Beta** · pasa el mouse por los nodos")
+    grafica(graficas.arbol_minimax(mm))
+    st.caption("S = estrategias de Intel, N = NVIDIA, A = AMD (" + ", ".join(EST_AMD) + "). Verde: jugada elegida. "
+               "Gris punteado: ramas podadas.")
 
-st.subheader("Comparación de los finalistas")
-st.dataframe(pd.DataFrame([{
-    "Finalista": x["nombre"], "Estrategia Minimax": x["minimax"]["jugada"],
-    "Valor garantizado": round(x["minimax"]["valor"], 2),
-    "Equilibrios de Nash": len(x["nash"]),
-} for x in fin]), hide_index=True, use_container_width=True)
-
-siguiente("paginas/recomendacion.py", "Siguiente: recomendación")
+siguiente("paginas/recomendacion.py", "Siguiente: la recomendación final", "CEO recomendado, plan B y memo para la junta.")

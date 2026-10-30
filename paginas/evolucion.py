@@ -3,9 +3,9 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from core.sprints import BASES, CANDIDATOS_S2, REGLAS_S2, UBICACIONES, VACANTES, evaluar_sprint2, resolver_sprint1
-from core.ui import encabezado, estilo
+from core.ui import encabezado, estilo, grafica
 
-encabezado("BITÁCORA", "Cómo lo construimos",
+encabezado(None, "Bitácora", "Cómo lo construimos",
            "El proyecto creció por entregas durante el semestre. Cada sprint agregó una técnica de inteligencia "
            "artificial y todas terminan trabajando juntas en esta app.")
 
@@ -17,12 +17,12 @@ linea = [
 ]
 cols = st.columns(4)
 for col, (s, t, d) in zip(cols, linea):
-    col.markdown(f"<div class='paso'><div class='n'>{s}</div><div class='t'>{t}</div><div class='d'>{d}</div></div>",
-                 unsafe_allow_html=True)
+    col.markdown(f"<div class='paso'><div class='ic'>{s[-1]}</div><div class='sec' style='color:#4f46e5'>{s}</div>"
+                 f"<div class='t'>{t}</div><div class='d'>{d}</div></div>", unsafe_allow_html=True)
 st.write("")
 
-t1, t2, t3, t4 = st.tabs(["Sprint 1 · A*", "Sprint 2 · Sistema experto", "Sprint 3 · Pipeline del headhunter",
-                          "Sprint 4 · Lógica difusa"])
+t1, t2, t3, t4 = st.tabs([":material/route: Sprint 1 · A*", ":material/checklist: Sprint 2 · Sistema experto",
+                          ":material/hub: Sprint 3 · Pipeline", ":material/blur_on: Sprint 4 · Lógica difusa"])
 
 with t1:
     st.markdown("#### Rutas de supervisión de teletrabajadores en el Valle de Aburrá")
@@ -33,25 +33,30 @@ with t1:
     st.write("Aquí aprendimos la idea que reaparece en todo el proyecto: un agente que **evalúa alternativas con una "
              "función de costo** y escoge la mejor.")
     sol = resolver_sprint1()
-    colores = {"Base_Norte": "#2563eb", "Base_Centro": "#059669", "Base_Sur": "#d97706"}
+    colores = {"Base_Norte": "#4f46e5", "Base_Centro": "#10b981", "Base_Sur": "#f59e0b"}
     izq, der = st.columns([1, 1.1])
     with izq:
         fig = go.Figure()
         for base, s in sol.items():
             xs = [UBICACIONES[n][0] for n in s["ruta"]]
             ys = [UBICACIONES[n][1] for n in s["ruta"]]
-            fig.add_scatter(x=xs, y=ys, mode="lines+markers", name=base.replace("_", " "),
-                            line=dict(color=colores[base], width=2), marker=dict(size=8))
+            info = ["Salida de la base 08:00"] + [
+                f"{i}. {p['lugar']} · {p['hora']}" + (f" · sorpresa {p['sorpresa'].lower()}" if p["sorpresa"] else "")
+                for i, p in enumerate(s["pasos"], start=1)]
+            fig.add_scatter(x=xs, y=ys, mode="lines+markers", name=base.replace("_", " "), customdata=info,
+                            line=dict(color=colores[base], width=2.5), marker=dict(size=10, line=dict(color="white", width=1.5)),
+                            hovertemplate="<b>" + base.replace("_", " ") + "</b><br>%{customdata}<extra></extra>")
         for n, (x, y) in UBICACIONES.items():
             fig.add_annotation(x=x, y=y, text=n.split("_", 1)[1], showarrow=False, yshift=12, font=dict(size=10))
         fig.update_xaxes(title="km (Oeste ← → Este)")
         fig.update_yaxes(title="km (Sur ← → Norte)", scaleanchor="x")
-        st.plotly_chart(estilo(fig, 520), use_container_width=True)
+        grafica(estilo(fig, 520))
+        st.caption("Pasa el mouse por la ruta para ver el orden y la hora de cada visita; haz clic en la leyenda para aislar una base.")
     with der:
         base = st.radio("Base", BASES, horizontal=True, format_func=lambda b: b.replace("_", " "))
         st.dataframe(pd.DataFrame(sol[base]["pasos"]).rename(columns={
             "hora": "Hora", "lugar": "Visita", "espera_min": "Espera (min)", "sorpresa": "Sorpresa",
-            "historial": "Hora anterior"}), hide_index=True, use_container_width=True)
+            "historial": "Hora anterior"}), hide_index=True, width="stretch")
         st.caption("Distancias en línea recta × 1,3 para simular calles reales; velocidad promedio de 24 km/h.")
 
 with t2:
@@ -76,7 +81,7 @@ with t2:
     st.dataframe(pd.DataFrame([{"Vacante": VACANTES[i].cargo, "Candidato": cc.nombre,
                                 "Resultado": "APTO" if evaluar_sprint2(cc, VACANTES[i])["apto"] else "NO APTO",
                                 "Fallos": ", ".join(evaluar_sprint2(cc, VACANTES[i])["fallos"]) or "—"}
-                               for i in range(3) for cc in CANDIDATOS_S2[i]]), hide_index=True, use_container_width=True)
+                               for i in range(3) for cc in CANDIDATOS_S2[i]]), hide_index=True, width="stretch")
 
 with t3:
     st.markdown("#### El headhunter completo")
