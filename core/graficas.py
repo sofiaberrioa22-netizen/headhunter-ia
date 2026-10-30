@@ -4,7 +4,8 @@ import plotly.graph_objects as go
 
 from core.datos import CRIT_LBL, CRITERIOS
 from core.juegos import EST_AMD, EST_INTEL, EST_NVIDIA
-from core.ui import LINEA, MAL, MARCA, MARCA_2, OK, SUAVE, TINTA, VIOLETA, estilo
+from core.datos import FR_LBL, FRENTES
+from core.ui import LINEA, MAL, MARCA, MARCA_2, OK, SUAVE, TINTA, VIOLETA, estilo, foto_circular
 
 
 def _alpha(hex_color, a):
@@ -29,28 +30,31 @@ def radar(candidatos, pesos):
                              fillcolor=_alpha(c["color"], 0.14), line=dict(color=c["color"], width=2.5),
                              marker=dict(size=6), hovertemplate=f"<b>{c['nombre']}</b><br>%{{theta}}: %{{r}}/10<extra></extra>")
     fig.update_layout(polar=dict(radialaxis=dict(range=[0, 10], showticklabels=False, gridcolor=LINEA),
-                                 angularaxis=dict(gridcolor=LINEA, tickfont=dict(size=12, color=TINTA))))
-    fig = estilo(fig, 440)
+                                 angularaxis=dict(gridcolor=LINEA, tickfont=dict(size=15, color=TINTA))))
+    fig = estilo(fig, 540)
     fig.update_layout(margin=dict(l=70, r=70, t=30, b=10))
     return fig
 
 
-def mapa_candidatos(candidatos, ajustes):
-    """Burbujas: ajuste al perfil vs. disponibilidad; el tamaño son los años como CEO."""
-    fig = go.Figure()
-    for c in candidatos:
-        fig.add_scatter(
-            x=[ajustes[c["id"]]], y=[c["disponibilidad"] * 100], mode="markers+text", name=c["nombre"],
-            text=[c["nombre"]], textposition="top center", textfont=dict(size=11, color=TINTA),
-            marker=dict(size=14 + 2.2 * c["exp_ceo"], color=_alpha(c["color"], 0.75), line=dict(color="white", width=2)),
-            hovertemplate=(f"<b>{c['nombre']}</b><br>{c['cargo']}<br>Ajuste al perfil: %{{x:.2f}}/10<br>"
-                           f"Disponibilidad: %{{y:.0f}}%<br>Años como CEO: {c['exp_ceo']}"
-                           f"<br>Conflicto de interés: {'sí' if c['conflicto'] else 'no'}<extra></extra>"))
-    fig.update_xaxes(title="Ajuste al perfil que busca Intel (0-10)", range=[5.3, 9.6])
-    fig.update_yaxes(title="Probabilidad de aceptar (%)", range=[-12, 105])
-    fig.add_annotation(x=9.5, y=100, text="Ideal: alto ajuste y alta disponibilidad", showarrow=False,
-                       xanchor="right", font=dict(size=11, color=SUAVE))
-    return estilo(fig, 420, leyenda=False)
+def ranking_candidatos(candidatos, ajustes):
+    """Ranking de ajuste al perfil, con la foto de cada candidato al final de su barra."""
+    orden = sorted(candidatos, key=lambda c: ajustes[c["id"]], reverse=True)
+    nombres = [c["nombre"] for c in orden]
+    fig = go.Figure(go.Bar(
+        y=nombres, x=[ajustes[c["id"]] for c in orden], orientation="h",
+        marker=dict(color=[_alpha(c["color"], 0.85) for c in orden], cornerradius=10),
+        text=[f"<b>{ajustes[c['id']]:.2f}</b>   ·   aceptaría {c['disponibilidad'] * 100:.0f}%" for c in orden],
+        textposition="inside", insidetextanchor="start", textfont=dict(size=15, color="white"),
+        customdata=[[c["cargo"], c["exp_ceo"], c["disponibilidad"] * 100, "sí" if c["conflicto"] else "no"] for c in orden],
+        hovertemplate="<b>%{y}</b><br>%{customdata[0]}<br>Ajuste al perfil: %{x:.2f}/10<br>Años como CEO: %{customdata[1]}"
+                      "<br>Aceptaría: %{customdata[2]:.0f}%<br>Conflicto de interés: %{customdata[3]}<extra></extra>"))
+    for c in orden:
+        fig.add_layout_image(source=foto_circular(c["id"]), x=ajustes[c["id"]], y=c["nombre"], xref="x", yref="y",
+                             sizex=1.2, sizey=0.92, xanchor="left", yanchor="middle", sizing="contain", layer="above")
+    fig.update_yaxes(autorange="reversed", tickfont=dict(size=16, color=TINTA), ticksuffix="   ")
+    fig.update_xaxes(range=[0, 10.6], title="Ajuste al perfil que busca Intel (0-10)", dtick=2)
+    fig.update_layout(bargap=0.28)
+    return estilo(fig, 90 + 82 * len(orden), leyenda=False)
 
 
 def mapa_grados(filas, requisitos):
@@ -61,11 +65,11 @@ def mapa_grados(filas, requisitos):
     fig = go.Figure(go.Heatmap(
         z=z, x=cols, y=nombres, zmin=0, zmax=1, xgap=4, ygap=4,
         colorscale=[[0, "#fee2e2"], [0.5, "#fde68a"], [0.75, "#bfdbfe"], [1, "#a7f3d0"]],
-        text=[[f"{v:.0%}" for v in fila] for fila in z], texttemplate="%{text}", textfont=dict(size=13, color=TINTA),
+        text=[[f"{v:.0%}" for v in fila] for fila in z], texttemplate="%{text}", textfont=dict(size=16, color=TINTA),
         hovertemplate="<b>%{y}</b><br>%{x}: %{z:.0%}<extra></extra>", showscale=False))
-    fig.update_yaxes(autorange="reversed", showgrid=False)
-    fig.update_xaxes(side="top", showgrid=False, tickangle=0, tickfont=dict(size=11))
-    return estilo(fig, 60 + 46 * len(nombres), leyenda=False)
+    fig.update_yaxes(autorange="reversed", showgrid=False, tickfont=dict(size=15, color=TINTA))
+    fig.update_xaxes(side="top", showgrid=False, tickangle=0, tickfont=dict(size=14, color=TINTA))
+    return estilo(fig, 80 + 62 * len(nombres), leyenda=False)
 
 
 def pertenencia(candidatos, atrib, grados, u, t, etiqueta):
@@ -95,7 +99,7 @@ def pertenencia(candidatos, atrib, grados, u, t, etiqueta):
                            yshift=(16 + 7 * (len(ns) - 1)) * (1 if arriba else -1), font=dict(size=10, color="#334155"))
     fig.update_yaxes(range=[-0.25, 1.3], tickformat=".0%", title="Grado de cumplimiento")
     fig.update_xaxes(title=etiqueta)
-    return estilo(fig, 380)
+    return estilo(fig, 470)
 
 
 def convergencia_animada(hist, optimo):
@@ -129,34 +133,9 @@ def convergencia_animada(hist, optimo):
                                         args=[[None], dict(frame=dict(duration=0, redraw=False), mode="immediate")])])])
     fig.update_xaxes(range=[0.5, G + 0.5], ticksuffix="  ", tickprefix="gen ")
     fig.update_yaxes(title="Fitness", range=[y0, y1])
-    fig = estilo(fig, 400)
-    fig.update_layout(margin=dict(t=52, b=8), legend=dict(yanchor="top", y=-0.2))
+    fig = estilo(fig, 500)
+    fig.update_layout(margin=dict(t=52, b=8), legend=dict(yanchor="top", y=-0.12))
     return fig
-
-
-def poblacion(hist, pool):
-    gens = list(range(1, len(hist["mejor"]) + 1))
-    fig = go.Figure()
-    for i, c in enumerate(pool):
-        fig.add_scatter(x=gens, y=[v * 100 for v in hist["proporcion"][i]], name=c["nombre"], stackgroup="uno",
-                        line=dict(color=c["color"], width=0.6), fillcolor=_alpha(c["color"], 0.55),
-                        hovertemplate=f"{c['nombre']}: %{{y:.0f}}%<extra></extra>")
-    fig.update_layout(hovermode="x unified")
-    fig.update_yaxes(title="% de la población", range=[0, 100], ticksuffix="%")
-    fig.update_xaxes(title="Generación")
-    return estilo(fig, 380)
-
-
-def ranking_fitness(filas):
-    """filas: lista de (nombre, fitness, color, es_finalista)."""
-    fig = go.Figure(go.Bar(
-        x=[f[1] for f in filas], y=[f[0] for f in filas], orientation="h",
-        marker=dict(color=[f[2] if f[3] else _alpha(f[2], 0.35) for f in filas], cornerradius=6),
-        text=[f"{f[1]:.4f}" for f in filas], textposition="outside",
-        hovertemplate="<b>%{y}</b><br>Mejor fitness posible: %{x:.4f}<extra></extra>"))
-    fig.update_yaxes(autorange="reversed")
-    fig.update_xaxes(title="Mejor fitness posible", range=[min(f[1] for f in filas) * 0.9, max(f[1] for f in filas) * 1.06])
-    return estilo(fig, 70 + 44 * len(filas), leyenda=False)
 
 
 def matriz_pagos(pagos, nash):
@@ -165,7 +144,7 @@ def matriz_pagos(pagos, nash):
     texto = [[f"<b>{pagos[(s, n)][0]:.2f}</b> , {pagos[(s, n)][1]}" for n in EST_NVIDIA] for s in EST_INTEL]
     fig = go.Figure(go.Heatmap(
         z=z, x=EST_NVIDIA, y=EST_INTEL, colorscale=[[0, "#eef2ff"], [1, "#818cf8"]], showscale=False, xgap=5, ygap=5,
-        text=texto, texttemplate="%{text}", textfont=dict(size=15, color=TINTA),
+        text=texto, texttemplate="%{text}", textfont=dict(size=18, color=TINTA),
         customdata=[[pagos[(s, n)][1] for n in EST_NVIDIA] for s in EST_INTEL],
         hovertemplate="Intel: <b>%{y}</b><br>NVIDIA: <b>%{x}</b><br>Pago Intel: %{z:.2f}<br>"
                       "Pago NVIDIA: %{customdata}<extra></extra>"))
@@ -177,8 +156,9 @@ def matriz_pagos(pagos, nash):
                               line=dict(color=OK, width=3), fillcolor="rgba(0,0,0,0)")
                 fig.add_annotation(x=j, y=i - 0.3, text="Nash", showarrow=False, font=dict(size=10, color="#047857"))
     fig.update_yaxes(autorange="reversed", showgrid=False, title="Intel")
-    fig.update_xaxes(side="top", showgrid=False, title="NVIDIA", tickangle=0)
-    return estilo(fig, 330, leyenda=False)
+    fig.update_xaxes(side="top", showgrid=False, title="NVIDIA", tickangle=0, tickfont=dict(size=14))
+    fig.update_yaxes(tickfont=dict(size=14))
+    return estilo(fig, 420, leyenda=False)
 
 
 def arbol_minimax(mm):
@@ -227,19 +207,19 @@ def arbol_minimax(mm):
         hoja = estado in ("hoja",) or (estado == "podado")
         fig.add_scatter(
             x=[n[0] for n in sel], y=[n[1] for n in sel], mode="markers+text", showlegend=False,
-            marker=dict(size=[42 if n[1] > 0 else 38 for n in sel], symbol=["square" if n[1] == 0 else "circle" for n in sel],
+            marker=dict(size=[58 if n[1] > 0 else 50 for n in sel], symbol=["square" if n[1] == 0 else "circle" for n in sel],
                         color=["white" if estado == "podado" else _alpha(colores[estado], 0.12) for _ in sel],
                         line=dict(color=colores[estado], width=2 if estado != "podado" else 1.2)),
             text=[(f"{n[2]}<br>{n[3]:.2f}" if n[3] is not None else f"{n[2]}<br>✂") for n in sel],
-            textfont=dict(size=10 if hoja else 11, color="#94a3b8" if estado == "podado" else TINTA),
+            textfont=dict(size=12 if hoja else 14, color="#94a3b8" if estado == "podado" else TINTA),
             hovertemplate="%{customdata}<extra></extra>", customdata=[n[5] for n in sel])
     for y, txt, col in ((3, "MAX · Intel", MARCA), (2, "Estrategia de Intel", "#64748b"), (1, "MIN · NVIDIA", MAL),
                         (0, "MIN · AMD", MAL)):
         fig.add_annotation(x=-1.3, y=y, text=f"<b>{txt}</b>", showarrow=False, xanchor="right",
-                           font=dict(size=11, color=col))
+                           font=dict(size=14, color=col))
     fig.update_xaxes(visible=False, range=[-4.2, 11.8])
     fig.update_yaxes(visible=False, range=[-0.55, 3.5])
-    return estilo(fig, 430, leyenda=False)
+    return estilo(fig, 540, leyenda=False)
 
 
 def decision(fin, pesos):
@@ -252,11 +232,14 @@ def decision(fin, pesos):
                     hovertemplate="<b>%{y}</b><br>" + nombre + ": %{x:.3f}<extra></extra>")
     for c in fin:
         fig.add_annotation(x=c["puntaje"], y=c["nombre"], text=f"<b>{c['puntaje']:.3f}</b>", showarrow=False,
-                           xanchor="left", xshift=6, font=dict(color=TINTA))
+                           xanchor="left", xshift=8, font=dict(color=TINTA, size=16))
+        fig.add_layout_image(source=foto_circular(c["id"]), x=c["puntaje"] + 0.1, y=c["nombre"], xref="x", yref="y",
+                             sizex=0.2, sizey=0.75, xanchor="left", yanchor="middle", sizing="contain")
     fig.update_layout(barmode="stack")
     fig.update_yaxes(autorange="reversed")
-    fig.update_xaxes(title="Puntaje final", range=[0, 1.12])
-    return estilo(fig, 110 + 50 * len(fin))
+    fig.update_xaxes(title="Puntaje final", range=[0, 1.25])
+    fig.update_yaxes(tickfont=dict(size=15, color=TINTA))
+    return estilo(fig, 160 + 80 * len(fin))
 
 
 def brecha_intel_nvidia():
@@ -268,7 +251,9 @@ def brecha_intel_nvidia():
                 text=["96,2", "75 %"], textposition="outside", hovertemplate="NVIDIA · %{x}: %{y}<extra></extra>")
     fig.update_layout(bargap=0.35)
     fig.update_yaxes(range=[0, 112], visible=False)
-    return estilo(fig, 320)
+    fig.update_xaxes(tickfont=dict(size=15, color=TINTA))
+    fig.update_traces(textfont=dict(size=18))
+    return estilo(fig, 420)
 
 
 def barras_pesos(etiquetas, valores, color):
@@ -278,4 +263,21 @@ def barras_pesos(etiquetas, valores, color):
         hovertemplate="%{y}: %{x:.1f}%<extra></extra>"))
     fig.update_yaxes(autorange="reversed")
     fig.update_xaxes(range=[0, max(valores) * 130], ticksuffix="%")
-    return estilo(fig, 280, leyenda=False)
+    fig.update_yaxes(tickfont=dict(size=15, color=TINTA))
+    return estilo(fig, 420, leyenda=False)
+
+
+def mandato(plan, prioridades):
+    """Mandato de 100 días del CEO (reparto de su foco) frente a la prioridad que el analista dio a cada frente."""
+    total = sum(plan.values()) or 1
+    etiquetas = [FR_LBL[f] for f in FRENTES]
+    fig = go.Figure()
+    fig.add_bar(y=etiquetas, x=[prioridades[f] * 100 for f in FRENTES], name="Prioridad para Intel", orientation="h",
+                marker=dict(color="#cbd5e1", cornerradius=5), hovertemplate="%{y}: prioridad %{x:.0f}%<extra></extra>")
+    fig.add_bar(y=etiquetas, x=[plan[f] / total * 100 for f in FRENTES], name="Foco del nuevo CEO", orientation="h",
+                marker=dict(color=MARCA, cornerradius=5), customdata=[plan[f] for f in FRENTES],
+                hovertemplate="%{y}: %{x:.0f}% del foco (intensidad %{customdata}/3)<extra></extra>")
+    fig.update_layout(barmode="group", bargap=0.25, bargroupgap=0.08)
+    fig.update_yaxes(autorange="reversed", tickfont=dict(size=15, color=TINTA))
+    fig.update_xaxes(ticksuffix="%")
+    return estilo(fig, 460)

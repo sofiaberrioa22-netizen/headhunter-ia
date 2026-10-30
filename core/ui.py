@@ -1,4 +1,9 @@
 """Estado compartido entre páginas y piezas visuales reutilizables."""
+import base64
+import json
+from functools import lru_cache
+from pathlib import Path
+
 import pandas  # noqa: F401  se importa una vez aquí para que plotly no lo importe a medias desde dos sesiones
 import plotly.graph_objects as go
 import plotly.io as pio
@@ -91,7 +96,7 @@ def resultados():
 
 
 # ---------------------------------------------------------------- encabezados y navegación
-def encabezado(paso, etiqueta, titulo, descripcion):
+def encabezado(paso, etiqueta, titulo, descripcion=""):
     """Encabezado de página con la barra de progreso de los 6 pasos del headhunter."""
     barra = ""
     if paso:
@@ -100,17 +105,58 @@ def encabezado(paso, etiqueta, titulo, descripcion):
             f"<span>{i}</span><em>{n}</em></div>" for i, (_, n) in enumerate(PASOS, start=1)) + "</div>"
     st.markdown(
         f"<div class='ph'>{barra}<div class='eyebrow'>{('Paso ' + str(paso) + ' de 6 · ') if paso else ''}{etiqueta}</div>"
-        f"<h1>{titulo}</h1><p class='lead'>{descripcion}</p></div>", unsafe_allow_html=True)
+        f"<h1>{titulo}</h1>" + (f"<p class='lead'>{descripcion}</p>" if descripcion else "") + "</div>",
+        unsafe_allow_html=True)
 
 
 def siguiente(pagina, texto, detalle=""):
     st.write("")
     with st.container(border=True, key="cta_siguiente"):
         a, b = st.columns([3, 1.2], vertical_alignment="center")
-        a.markdown(f"**{texto}**" + (f"  \n<span class='muted'>{detalle}</span>" if detalle else ""), unsafe_allow_html=True)
+        a.markdown(f"**{texto}**")
         if b.button("Continuar", type="primary", icon=":material/arrow_forward:", icon_position="right",
                     width="stretch", key=f"ir_{pagina}"):
             st.switch_page(pagina)
+
+
+# ---------------------------------------------------------------- fotos de los candidatos
+_FOTOS = Path(__file__).resolve().parent.parent / "assets" / "candidatos"
+
+
+@lru_cache(maxsize=None)
+def foto(cid):
+    """Foto del candidato como data URI (sirve en HTML y en las imágenes de Plotly)."""
+    return "data:image/jpeg;base64," + base64.b64encode((_FOTOS / f"{cid}.jpg").read_bytes()).decode()
+
+
+@lru_cache(maxsize=None)
+def foto_circular(cid):
+    """Recorte circular con el aro del color del candidato (PNG transparente), para las gráficas."""
+    return "data:image/png;base64," + base64.b64encode((_FOTOS / f"{cid}_circ.png").read_bytes()).decode()
+
+
+@lru_cache(maxsize=None)
+def creditos_fotos():
+    return json.loads((_FOTOS / "creditos.json").read_text(encoding="utf-8"))
+
+
+def avatar(c, tam=56, borde=3):
+    return (f"<img src='{foto(c['id'])}' alt='{c['nombre']}' style='width:{tam}px;height:{tam}px;border-radius:50%;"
+            f"object-fit:cover;border:{borde}px solid {c['color']};flex:none'>")
+
+
+def tarjeta_persona(c, detalle="", extra="", tam=72):
+    """Foto + nombre + cargo en una fila."""
+    return (f"<div class='persona'>{avatar(c, tam)}<div><div class='pn'>{c['nombre']}</div>"
+            f"<div class='pc'>{detalle or c['cargo']}</div>{extra}</div></div>")
+
+
+def galeria(candidatos, pie=None, apagados=()):
+    """Fila de fotos con nombre; `pie(c)` da el texto bajo cada nombre y `apagados` los ids en gris."""
+    celdas = "".join(
+        f"<div class='g {'off' if c['id'] in apagados else ''}' style='--c:{c['color']}'><img src='{foto(c['id'])}' "
+        f"alt='{c['nombre']}'><b>{c['nombre']}</b><small>{pie(c) if pie else ''}</small></div>" for c in candidatos)
+    st.markdown(f"<div class='galeria'>{celdas}</div>", unsafe_allow_html=True)
 
 
 # ---------------------------------------------------------------- piezas de HTML
@@ -146,10 +192,10 @@ def lista_html(items, color):
 # ---------------------------------------------------------------- gráficas
 pio.templates["headhunter"] = go.layout.Template(
     layout=dict(
-        font=dict(family='"Source Sans", "Source Sans Pro", sans-serif', size=13, color="#334155"),
+        font=dict(family='"Source Sans", "Source Sans Pro", sans-serif', size=14, color="#334155"),
         colorway=[MARCA, OK, ALERTA, VIOLETA, MARCA_2, "#ec4899", MAL],
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-        hoverlabel=dict(bgcolor="white", bordercolor=LINEA, font=dict(color=TINTA, size=12)),
+        hoverlabel=dict(bgcolor="white", bordercolor=LINEA, font=dict(color=TINTA, size=13)),
         xaxis=dict(gridcolor="#eef1f6", zeroline=False, linecolor=LINEA, ticks=""),
         yaxis=dict(gridcolor="#eef1f6", zeroline=False, linecolor=LINEA, ticks=""),
         polar=dict(bgcolor="rgba(0,0,0,0)", radialaxis=dict(gridcolor=LINEA), angularaxis=dict(gridcolor=LINEA)),
@@ -162,7 +208,7 @@ def estilo(fig, alto=320, leyenda=True):
         template="headhunter", height=alto, margin=dict(l=8, r=8, t=36, b=8), showlegend=leyenda,
         # Streamlit reemplaza los fondos transparentes por el gris del tema; las gráficas van sobre tarjetas blancas
         paper_bgcolor="white", plot_bgcolor="white",
-        legend=dict(orientation="h", yanchor="bottom", y=1.01, x=0, font=dict(size=11)) if leyenda else None,
+        legend=dict(orientation="h", yanchor="bottom", y=1.01, x=0, font=dict(size=13)) if leyenda else None,
     )
     fig.update_xaxes(automargin=True)
     fig.update_yaxes(automargin=True)
@@ -181,7 +227,17 @@ def grafica(fig, **kw):
 
 CSS = """
 <style>
-.block-container {max-width: 1180px; padding-top: 3.2rem; padding-bottom: 4rem;}
+.block-container {max-width: 1320px; padding-top: 3.2rem; padding-bottom: 4rem;}
+.persona {display: flex; gap: 14px; align-items: center;}
+.persona .pn {font-weight: 800; font-size: 1.15rem; color: #0f172a; line-height: 1.15;}
+.persona .pc {color: #64748b; font-size: 0.86rem; line-height: 1.3;}
+.galeria {display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: 12px; margin: 0.4rem 0 1rem;}
+.galeria .g {background: #fff; border: 1px solid #e5e9f2; border-radius: 18px; padding: 14px 10px 12px; text-align: center;
+             box-shadow: 0 6px 20px -16px rgba(15,23,42,0.35);}
+.galeria .g img {width: 88px; height: 88px; border-radius: 50%; object-fit: cover; border: 4px solid var(--c);}
+.galeria .g b {display: block; margin-top: 8px; color: #0f172a; font-size: 0.98rem;}
+.galeria .g small {color: #64748b; font-size: 0.78rem;}
+.galeria .g.off {opacity: 0.45; filter: grayscale(0.9);}
 h1, h2, h3 {letter-spacing: -0.02em; color: #0f172a;}
 h2 {font-weight: 750 !important;} h3 {font-weight: 700 !important;}
 .muted {color: #64748b;}

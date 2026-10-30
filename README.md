@@ -39,6 +39,12 @@ La app trae guardada una respuesta de Gemini, así que funciona sin API key. Par
 clave en la página 1 o créala como secreto `GEMINI_API_KEY` (en local, en `.streamlit/secrets.toml`; en Streamlit
 Community Cloud, en *Settings → Secrets*). Nunca subas la clave al repositorio.
 
+## Fotos
+
+Las fotos de los candidatos vienen de Wikimedia Commons con licencias CC BY 2.0, CC BY 4.0 y CC BY-SA 4.0. El autor,
+la licencia y el enlace de cada una están en `assets/candidatos/creditos.json` y al pie de la página de recomendación.
+La ilustración de la portada (la carrera entre NVIDIA e Intel) es un dibujo propio en SVG.
+
 ## Uso académico
 
 Los puntajes de los candidatos son estimaciones del equipo hechas con información pública; no son evaluaciones reales
