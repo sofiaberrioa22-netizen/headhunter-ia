@@ -3,17 +3,15 @@ import streamlit as st
 from core import graficas
 from core.datos import CANDIDATOS
 from core.genetico import ajuste_estrategico
-from core.ui import (ALERTA, MAL, MARCA, OK, avatar, chip, config, encabezado, grafica, kpis, lista_html, siguiente)
+from core.ui import (ALERTA, MAL, MARCA, OK, avatar, chip, config, encabezado, kpis, lista_html, siguiente)
 
 encabezado(2, "Búsqueda", "Los candidatos", "Siete ejecutivos reales de la industria de semiconductores.")
 
 cfg = config()
 ajustes = {c["id"]: ajuste_estrategico(c, cfg["pesos"]) for c in CANDIDATOS}
 
-with st.container(border=True):
-    st.markdown("### ¿Quién encaja mejor con lo que Intel necesita?")
-    grafica(graficas.ranking_candidatos(CANDIDATOS, ajustes))
-    st.caption("Pasa el mouse por cada barra para ver el detalle. Puntajes estimados por el equipo con información pública.")
+graficas.ranking_candidatos(CANDIDATOS, ajustes, "¿Quién encaja mejor con lo que Intel necesita?",
+                            "Pasa el mouse por cada barra · puntajes estimados por el equipo con información pública")
 
 st.markdown("## Perfil de cada candidato")
 nombres = [c["nombre"] for c in CANDIDATOS]
@@ -36,9 +34,9 @@ with izq.container(border=True):
     st.markdown(f"<div class='sec' style='color:{OK}'>Logró</div>" + lista_html(c["logros"][:3], OK) +
                 f"<div class='sec' style='color:{MAL}'>No logró</div>" + lista_html(c["no_logros"][:2], MAL),
                 unsafe_allow_html=True)
-with der.container(border=True):
+with der:
     comparar = st.multiselect("Comparar con", [n for n in nombres if n != sel], placeholder="Agrega candidatos al radar")
-    grafica(graficas.radar([c] + [x for x in CANDIDATOS if x["nombre"] in comparar], cfg["pesos"]))
-    st.caption("Línea punteada: lo que Intel necesita. Clic en la leyenda para ocultar un perfil.")
+    graficas.radar([c] + [x for x in CANDIDATOS if x["nombre"] in comparar], cfg["pesos"],
+                   "Su perfil frente a lo que Intel necesita", "Línea punteada: lo que Intel necesita")
 
 siguiente("paginas/filtro.py", "Siguiente: el filtro de requisitos")

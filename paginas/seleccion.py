@@ -2,7 +2,7 @@ import streamlit as st
 
 from core import graficas
 from core.datos import FRENTES
-from core.ui import ALERTA, OK, config, encabezado, galeria, grafica, kpis, resultados, siguiente, tarjeta_persona
+from core.ui import ALERTA, OK, config, encabezado, galeria, kpis, resultados, siguiente, tarjeta_persona
 
 encabezado(4, "Comparación", "Selección y mandato de 100 días",
            "Un algoritmo genético busca la mejor combinación de <b>CEO + plan</b>. Un buen CEO con el plan equivocado "
@@ -36,13 +36,13 @@ with izq:
         st.markdown(tarjeta_persona(ganador, "Elegido por el algoritmo", tam=84), unsafe_allow_html=True)
     kpis([("Fitness", f"{ga['fitness']:.4f}", "óptimo global ✓" if optimo else "cerca del óptimo", OK if optimo else ALERTA),
           ("Combinaciones", f"{ex['total']:,}".replace(",", "."), "verificadas una por una", "#64748b")])
-with der.container(border=True):
-    st.markdown("### La evolución hacia la mejor solución")
-    grafica(graficas.convergencia_animada(ga["hist"], ex["fitness"]))
+with der:
+    graficas.convergencia(ga["hist"], ex["fitness"], "La evolución hacia la mejor solución",
+                          "La línea se dibuja generación a generación · rueda del mouse para hacer zoom")
 
-with st.container(border=True):
-    st.markdown(f"### El mandato de {ganador['nombre']} frente a las prioridades de Intel")
-    grafica(graficas.mandato(dict(zip(FRENTES, ga["mejor"][1:])), cfg["prioridades"]))
+graficas.mandato(dict(zip(FRENTES, ga["mejor"][1:])), cfg["prioridades"],
+                 f"El mandato de 100 días de {ganador['nombre']}",
+                 "Cada celda encendida es un nivel de foco (0 a 3) · a la derecha, la prioridad para Intel")
 
 st.markdown("## Los tres finalistas")
 top = [pool[r["idx"]] for r in ex["ranking"][:3]]

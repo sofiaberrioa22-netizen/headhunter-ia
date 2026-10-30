@@ -5,7 +5,7 @@ from core import graficas
 from core.datos import CANDIDATOS, REQ_ATRIB, REQ_LBL
 from core.difuso import tolerancia_de
 from core.experto import construir_reglas
-from core.ui import (MAL, MARCA, MODO_CLASICO, MODO_DIFUSO, OK, chip, config, encabezado, galeria, grafica, kpis,
+from core.ui import (MAL, MARCA, MODO_CLASICO, MODO_DIFUSO, OK, chip, config, encabezado, galeria, kpis,
                      resultados, siguiente)
 
 encabezado(3, "Descarte · Sprint 4", "Filtro de requisitos",
@@ -47,23 +47,21 @@ galeria(orden, pie=(lambda c: f"{difuso[c['id']]['etiqueta']} · {difuso[c['id']
         else (lambda c: "Apto" if clasico[c["id"]]["apto"] else "No apto"),
         apagados={c["id"] for c in CANDIDATOS if c["id"] not in pasan})
 
-with st.container(border=True):
-    st.markdown("### Qué tanto cumple cada candidato")
-    filas = [{"nombre": c["nombre"], "grados": difuso[c["id"]]["grados"], "grado": difuso[c["id"]]["grado"]} for c in orden]
-    grafica(graficas.mapa_grados(filas, {r: REQ_LBL[r] for r in req}))
+filas = [{"nombre": c["nombre"], "grados": difuso[c["id"]]["grados"], "grado": difuso[c["id"]]["grado"]} for c in orden]
+graficas.mapa_grados(filas, {r: REQ_LBL[r] for r in req}, CANDIDATOS, "Qué tanto cumple cada candidato",
+                     "Verde: cumple · azul: cumple en parte · ámbar: le falta mucho · rojo: no cumple")
 
-with st.container(border=True):
-    st.markdown("### Del todo o nada al grado de cumplimiento")
-    req_sel = st.radio("Requisito", list(req), format_func=lambda r: REQ_LBL[r], horizontal=True,
-                       label_visibility="collapsed")
-    u, t = req[req_sel], tolerancia_de(req_sel, cfg["tol_puntos"], cfg["tol_anos"])
-    grados = {c["id"]: difuso[c["id"]]["grados"][req_sel] for c in CANDIDATOS}
-    grafica(graficas.pertenencia(CANDIDATOS, REQ_ATRIB[req_sel], grados, u, t, REQ_LBL[req_sel]))
-    haas, gels = difuso["C6"], difuso["C7"]
-    st.markdown(f"{chip(haas['etiqueta'], haas['color'])} **Rene Haas** queda en {haas['grado']:.0%}: le frena "
-                f"{haas['limitante'].lower() if haas['limitante'] else 'nada'}. &nbsp; "
-                f"{chip(gels['etiqueta'], gels['color'])} **Pat Gelsinger** queda en {gels['grado']:.0%}: el sistema "
-                f"sigue descartando a quien debe.", unsafe_allow_html=True)
+req_sel = st.radio("Requisito", list(req), format_func=lambda r: REQ_LBL[r], horizontal=True,
+                   label_visibility="collapsed")
+u, t = req[req_sel], tolerancia_de(req_sel, cfg["tol_puntos"], cfg["tol_anos"])
+grados = {c["id"]: difuso[c["id"]]["grados"][req_sel] for c in CANDIDATOS}
+graficas.pertenencia(CANDIDATOS, REQ_ATRIB[req_sel], grados, u, t, REQ_LBL[req_sel],
+                     "Del todo o nada al grado de cumplimiento", f"Requisito: {REQ_LBL[req_sel]} ≥ {u:g}")
+haas, gels = difuso["C6"], difuso["C7"]
+st.markdown(f"{chip(haas['etiqueta'], haas['color'])} **Rene Haas** queda en {haas['grado']:.0%}: le frena "
+            f"{haas['limitante'].lower() if haas['limitante'] else 'nada'}. &nbsp; "
+            f"{chip(gels['etiqueta'], gels['color'])} **Pat Gelsinger** queda en {gels['grado']:.0%}: el sistema "
+            f"sigue descartando a quien debe.", unsafe_allow_html=True)
 
 with st.expander("Reglas del sistema experto", icon=":material/rule:"):
     for r in construir_reglas(res["clasico"]["req"]):

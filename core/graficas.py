@@ -1,283 +1,438 @@
-"""Gráficas interactivas (Plotly) de la app. Todas admiten hover, zoom, leyenda clicable y descarga en PNG."""
-import numpy as np
-import plotly.graph_objects as go
+"""Gráficas de la app (ECharts): animadas al aparecer, con texturas, degradados y fotos de los candidatos.
 
-from core.datos import CRIT_LBL, CRITERIOS
+Todas son interactivas: tooltip al pasar el mouse, leyenda clicable, descarga como imagen y botón para repetir la animación.
+"""
+from core.datos import CRIT_LBL, CRITERIOS, FR_LBL, FRENTES
+from core.echarts import (AMBAR, AZUL, AZUL_CLARO, JS, LEYENDA, REJILLA, ROJO, TEXTO, TEXTO_SUAVE, TURQUESA, VERDE,
+                          VIOLETA, alpha, degradado, echart, eje_categoria, eje_valor)
 from core.juegos import EST_AMD, EST_INTEL, EST_NVIDIA
-from core.datos import FR_LBL, FRENTES
-from core.ui import LINEA, MAL, MARCA, MARCA_2, OK, SUAVE, TINTA, VIOLETA, estilo, foto_circular
+from core.ui import foto_circular
+
+TOOLTIP_DATOS = {"trigger": "item", "formatter": JS("function(p){return p.data && p.data.tip ? p.data.tip : p.name;}")}
 
 
-def _alpha(hex_color, a):
-    h = hex_color.lstrip("#")
-    return f"rgba({int(h[0:2], 16)},{int(h[2:4], 16)},{int(h[4:6], 16)},{a})"
+# ---------------------------------------------------------------- página 1
+def brecha_intel_nvidia(titulo, subtitulo=""):
+    """Ingresos como pilas de obleas que crecen + anillos de margen bruto."""
+    pilas = [
+        {"value": 16.1, "symbol": "roundRect", "itemStyle": {"color": degradado(AZUL, AZUL_CLARO)},
+         "tip": "<b>Intel</b><br>Ingresos Q2 2026: US$16,1 B<br>+25% interanual",
+         "label": {"formatter": "US$16,1 B", "color": AZUL_CLARO}},
+        {"value": 96.2, "symbol": "roundRect", "itemStyle": {"color": degradado("#4d7c0f", VERDE)},
+         "tip": "<b>NVIDIA</b><br>Ingresos Q2 FY2027: US$96,2 B<br>+106% interanual",
+         "label": {"formatter": "US$96,2 B", "color": VERDE}},
+    ]
+
+    def anillo(nombre, valor, color, centro):
+        return {
+            "type": "gauge", "center": centro, "radius": "25%", "startAngle": 90, "endAngle": -270, "min": 0, "max": 100,
+            "pointer": {"show": False},
+            "progress": {"show": True, "roundCap": True, "width": 16,
+                         "itemStyle": {"color": color, "shadowBlur": 18, "shadowColor": color}},
+            "axisLine": {"lineStyle": {"width": 16, "color": [[1, "rgba(148,163,184,0.12)"]]}},
+            "splitLine": {"show": False}, "axisTick": {"show": False}, "axisLabel": {"show": False},
+            "title": {"offsetCenter": [0, "150%"], "color": TEXTO, "fontSize": 15, "fontWeight": 700},
+            "detail": {"valueAnimation": True, "offsetCenter": [0, 0], "fontSize": 22, "fontWeight": 800, "color": "#fff",
+                       "formatter": "{value}%"},
+            "data": [{"value": valor, "name": nombre}], "animationDuration": 2200,
+            "tooltip": {"formatter": f"{nombre}: margen bruto {valor}%"}}
+
+    opcion = {
+        "tooltip": TOOLTIP_DATOS,
+        "title": [{"text": "Ingresos del trimestre", "left": "4%", "top": 0, "textStyle": {"color": TEXTO_SUAVE, "fontSize": 13}},
+                  {"text": "Margen bruto", "left": "62%", "top": 0, "textStyle": {"color": TEXTO_SUAVE, "fontSize": 13}}],
+        "grid": {"left": "4%", "right": "48%", "top": 40, "bottom": 30},
+        "xAxis": eje_categoria(["Intel", "NVIDIA"], axisLabel={"color": TEXTO, "fontSize": 16, "fontWeight": 700}),
+        "yAxis": eje_valor(max=110, axisLabel={"show": False}),
+        "series": [
+            {"type": "pictorialBar", "data": pilas, "symbolRepeat": True, "symbolSize": ["68%", 12], "symbolMargin": 3,
+             "barCategoryGap": "28%",
+             "label": {"show": True, "position": "top", "fontSize": 18, "fontWeight": 800},
+             "animationDelay": JS("function(dataIndex, params){return params.index * 22 + dataIndex * 250;}"),
+             "animationDuration": 400},
+            anillo("Intel", 40.4, AZUL_CLARO, ["66%", "50%"]),
+            anillo("NVIDIA", 75.0, VERDE, ["87%", "50%"]),
+        ],
+    }
+    echart(opcion, 380, titulo, subtitulo)
 
 
-def radar(candidatos, pesos):
-    """Perfil de uno o varios candidatos frente a la importancia de cada cualidad para Intel."""
-    etiquetas = [CRIT_LBL[k] for k in CRITERIOS]
-    theta = etiquetas + etiquetas[:1]
-    mx = max(pesos.values())
-    fig = go.Figure()
-    imp = [10 * pesos[k] / mx for k in CRITERIOS]
-    fig.add_scatterpolar(r=imp + imp[:1], theta=theta, name="Importancia para Intel", fill="toself",
-                         fillcolor="rgba(148,163,184,0.12)", line=dict(color="#94a3b8", dash="dot", width=2),
-                         hovertemplate="%{theta}: importancia %{customdata:.0%}<extra></extra>",
-                         customdata=[pesos[k] for k in CRITERIOS] + [pesos[CRITERIOS[0]]])
-    for c in candidatos:
-        r = [c[k] for k in CRITERIOS]
-        fig.add_scatterpolar(r=r + r[:1], theta=theta, name=c["nombre"], fill="toself",
-                             fillcolor=_alpha(c["color"], 0.14), line=dict(color=c["color"], width=2.5),
-                             marker=dict(size=6), hovertemplate=f"<b>{c['nombre']}</b><br>%{{theta}}: %{{r}}/10<extra></extra>")
-    fig.update_layout(polar=dict(radialaxis=dict(range=[0, 10], showticklabels=False, gridcolor=LINEA),
-                                 angularaxis=dict(gridcolor=LINEA, tickfont=dict(size=15, color=TINTA))))
-    fig = estilo(fig, 540)
-    fig.update_layout(margin=dict(l=70, r=70, t=30, b=10))
-    return fig
+def barras_pesos(etiquetas, valores, titulo, subtitulo=""):
+    """Importancia de cada cualidad: barras de energía con degradado sobre un riel."""
+    orden = sorted(zip(etiquetas, valores), key=lambda x: x[1], reverse=True)
+    opcion = {
+        "tooltip": {"trigger": "axis", "axisPointer": {"type": "shadow"},
+                    "valueFormatter": JS("function(v){return (v*100).toFixed(0)+'%';}")},
+        "grid": {"left": 10, "right": 60, "top": 10, "bottom": 10, "containLabel": True},
+        "xAxis": eje_valor(show=False, max=max(valores) * 1.15),
+        "yAxis": eje_categoria([e for e, _ in orden], inverse=True, axisLine={"show": False},
+                               axisLabel={"color": TEXTO, "fontSize": 15}),
+        "series": [{
+            "type": "bar", "data": [v for _, v in orden], "barWidth": 22, "showBackground": True,
+            "backgroundStyle": {"color": "rgba(148,163,184,0.08)", "borderRadius": 11},
+            "itemStyle": {"borderRadius": 11, "color": degradado(TURQUESA, VERDE),
+                          "shadowBlur": 14, "shadowColor": alpha(VERDE, 0.45)},
+            "label": {"show": True, "position": "right", "color": "#fff", "fontWeight": 800, "fontSize": 14,
+                      "formatter": JS("function(p){return (p.value*100).toFixed(0)+'%';}")},
+            "animationDelay": JS("function(i){return i * 120;}")}],
+    }
+    echart(opcion, 400, titulo, subtitulo)
 
 
-def ranking_candidatos(candidatos, ajustes):
-    """Ranking de ajuste al perfil, con la foto de cada candidato al final de su barra."""
+# ---------------------------------------------------------------- página 2
+def ranking_candidatos(candidatos, ajustes, titulo, subtitulo=""):
+    """Ranking de ajuste al perfil: barras con degradado que terminan en la foto de cada candidato."""
     orden = sorted(candidatos, key=lambda c: ajustes[c["id"]], reverse=True)
-    nombres = [c["nombre"] for c in orden]
-    fig = go.Figure(go.Bar(
-        y=nombres, x=[ajustes[c["id"]] for c in orden], orientation="h",
-        marker=dict(color=[_alpha(c["color"], 0.85) for c in orden], cornerradius=10),
-        text=[f"<b>{ajustes[c['id']]:.2f}</b>   ·   aceptaría {c['disponibilidad'] * 100:.0f}%" for c in orden],
-        textposition="inside", insidetextanchor="start", textfont=dict(size=15, color="white"),
-        customdata=[[c["cargo"], c["exp_ceo"], c["disponibilidad"] * 100, "sí" if c["conflicto"] else "no"] for c in orden],
-        hovertemplate="<b>%{y}</b><br>%{customdata[0]}<br>Ajuste al perfil: %{x:.2f}/10<br>Años como CEO: %{customdata[1]}"
-                      "<br>Aceptaría: %{customdata[2]:.0f}%<br>Conflicto de interés: %{customdata[3]}<extra></extra>"))
+    barras, fotos = [], []
     for c in orden:
-        fig.add_layout_image(source=foto_circular(c["id"]), x=ajustes[c["id"]], y=c["nombre"], xref="x", yref="y",
-                             sizex=1.2, sizey=0.92, xanchor="left", yanchor="middle", sizing="contain", layer="above")
-    fig.update_yaxes(autorange="reversed", tickfont=dict(size=16, color=TINTA), ticksuffix="   ")
-    fig.update_xaxes(range=[0, 10.6], title="Ajuste al perfil que busca Intel (0-10)", dtick=2)
-    fig.update_layout(bargap=0.28)
-    return estilo(fig, 90 + 82 * len(orden), leyenda=False)
+        tip = (f"<b>{c['nombre']}</b><br>{c['cargo']}<br>Ajuste al perfil: <b>{ajustes[c['id']]:.2f}</b>/10<br>"
+               f"Años como CEO: {c['exp_ceo']} · Aceptaría: {c['disponibilidad'] * 100:.0f}%")
+        barras.append({"value": round(ajustes[c["id"]], 2), "tip": tip,
+                       "itemStyle": {"color": degradado(alpha(c["color"], 0.25), c["color"]),
+                                     "shadowBlur": 16, "shadowColor": alpha(c["color"], 0.5)},
+                       "label": {"formatter": f"{ajustes[c['id']]:.2f}  ·  {c['disponibilidad'] * 100:.0f}% acepta"}})
+        fotos.append({"value": [round(ajustes[c["id"]], 2), c["nombre"]], "symbol": "image://" + foto_circular(c["id"]),
+                      "tip": tip})
+    opcion = {
+        "tooltip": TOOLTIP_DATOS,
+        "grid": {"left": 10, "right": 50, "top": 10, "bottom": 30, "containLabel": True},
+        "xAxis": eje_valor(min=0, max=10.4, name="Ajuste al perfil (0-10)", nameLocation="middle", nameGap=26,
+                           axisLabel={"color": TEXTO_SUAVE, "showMaxLabel": False}),
+        "yAxis": eje_categoria([c["nombre"] for c in orden], inverse=True, axisLine={"show": False},
+                               axisLabel={"color": TEXTO, "fontSize": 15, "fontWeight": 600, "margin": 14}),
+        "series": [
+            {"type": "bar", "data": barras, "barWidth": "56%", "showBackground": True,
+             "backgroundStyle": {"color": "rgba(148,163,184,0.06)", "borderRadius": 14},
+             "itemStyle": {"borderRadius": 14},
+             "label": {"show": True, "position": "insideLeft", "color": "#fff", "fontSize": 14, "fontWeight": 700,
+                       "distance": 14},
+             "animationDelay": JS("function(i){return i * 140;}"), "animationDuration": 1300},
+            {"type": "scatter", "data": fotos, "symbolSize": 58, "symbolOffset": [26, 0], "z": 5,
+             "animationDelay": JS("function(i){return 900 + i * 140;}"), "animationDuration": 600,
+             "animationEasing": "backOut"},
+        ],
+    }
+    echart(opcion, 90 + 72 * len(orden), titulo, subtitulo)
 
 
-def mapa_grados(filas, requisitos):
+def radar(candidatos, pesos, titulo, subtitulo=""):
+    mx = max(pesos.values())
+    indicadores = [{"name": CRIT_LBL[k], "max": 10} for k in CRITERIOS]
+    datos = [{"name": "Importancia para Intel", "value": [round(10 * pesos[k] / mx, 2) for k in CRITERIOS],
+              "symbol": "none", "lineStyle": {"color": TEXTO_SUAVE, "type": "dashed", "width": 2},
+              "areaStyle": {"color": "rgba(148,163,184,0.10)"}, "itemStyle": {"color": TEXTO_SUAVE}}]
+    for c in candidatos:
+        datos.append({"name": c["nombre"], "value": [c[k] for k in CRITERIOS], "symbolSize": 6,
+                      "lineStyle": {"color": c["color"], "width": 3, "shadowBlur": 12, "shadowColor": c["color"]},
+                      "itemStyle": {"color": c["color"]},
+                      "areaStyle": {"color": {"type": "radial", "x": 0.5, "y": 0.5, "r": 0.6, "colorStops": [
+                          {"offset": 0, "color": alpha(c["color"], 0.05)}, {"offset": 1, "color": alpha(c["color"], 0.35)}]}}})
+    opcion = {
+        "legend": {**LEYENDA, "data": [d["name"] for d in datos]},
+        "tooltip": {"trigger": "item"},
+        "radar": {"indicator": indicadores, "radius": "66%", "center": ["50%", "57%"], "splitNumber": 5,
+                  "axisName": {"color": TEXTO, "fontSize": 14, "fontWeight": 600},
+                  "splitLine": {"lineStyle": {"color": REJILLA}}, "axisLine": {"lineStyle": {"color": REJILLA}},
+                  "splitArea": {"areaStyle": {"color": ["rgba(255,255,255,0.015)", "rgba(255,255,255,0.04)"]}}},
+        "series": [{"type": "radar", "data": datos, "animationDuration": 1600, "animationEasing": "elasticOut"}],
+    }
+    echart(opcion, 480, titulo, subtitulo)
+
+
+# ---------------------------------------------------------------- página 3
+def _etiquetas_con_foto(candidatos, tam=30):
+    """Rich text para mostrar foto + nombre en un eje de categorías."""
+    rich = {"n": {"color": TEXTO, "fontSize": 14, "fontWeight": 600, "padding": [0, 0, 0, 8]}}
+    mapa = {}
+    for c in candidatos:
+        rich[c["id"]] = {"height": tam, "width": tam, "borderRadius": tam / 2,
+                         "backgroundColor": {"image": foto_circular(c["id"])}}
+        mapa[c["nombre"]] = c["id"]
+    formato = JS("function(v){var m=" + str(mapa).replace("'", '"') + ";return '{'+m[v]+'|}{n|'+v+'}';}")
+    return rich, formato
+
+
+def mapa_grados(filas, requisitos, candidatos, titulo, subtitulo=""):
     """Heatmap candidato × requisito con el grado de cumplimiento difuso."""
+    cols = list(requisitos.values()) + ["Grado total"]
     nombres = [f["nombre"] for f in filas]
-    z = [[f["grados"][r] for r in requisitos] + [f["grado"]] for f in filas]
-    cols = [requisitos[r] for r in requisitos] + ["Grado total"]
-    fig = go.Figure(go.Heatmap(
-        z=z, x=cols, y=nombres, zmin=0, zmax=1, xgap=4, ygap=4,
-        colorscale=[[0, "#fee2e2"], [0.5, "#fde68a"], [0.75, "#bfdbfe"], [1, "#a7f3d0"]],
-        text=[[f"{v:.0%}" for v in fila] for fila in z], texttemplate="%{text}", textfont=dict(size=16, color=TINTA),
-        hovertemplate="<b>%{y}</b><br>%{x}: %{z:.0%}<extra></extra>", showscale=False))
-    fig.update_yaxes(autorange="reversed", showgrid=False, tickfont=dict(size=15, color=TINTA))
-    fig.update_xaxes(side="top", showgrid=False, tickangle=0, tickfont=dict(size=14, color=TINTA))
-    return estilo(fig, 80 + 62 * len(nombres), leyenda=False)
+    datos = []
+    for i, f in enumerate(filas):
+        valores = [f["grados"][r] for r in requisitos] + [f["grado"]]
+        for j, v in enumerate(valores):
+            total = j == len(cols) - 1
+            datos.append({"value": [j, i, round(v, 2)], "tip": f"<b>{f['nombre']}</b><br>{cols[j]}: {v:.0%}",
+                          **({"itemStyle": {"borderColor": "#e2e8f0", "borderWidth": 2}} if total else {})})
+    rich, formato = _etiquetas_con_foto([c for c in candidatos if c["nombre"] in nombres])
+    opcion = {
+        "tooltip": TOOLTIP_DATOS,
+        "grid": {"left": 10, "right": 10, "top": 36, "bottom": 10, "containLabel": True},
+        "xAxis": eje_categoria(cols, position="top", axisLine={"show": False},
+                               axisLabel={"color": TEXTO, "fontSize": 14, "fontWeight": 700}),
+        "yAxis": eje_categoria(nombres, inverse=True, axisLine={"show": False},
+                               axisLabel={"formatter": formato, "rich": rich, "margin": 12}),
+        "visualMap": {"show": False, "type": "piecewise", "dimension": 2, "pieces": [
+            {"min": 0.999, "color": VERDE}, {"min": 0.5, "max": 0.999, "color": AZUL_CLARO},
+            {"min": 0.001, "max": 0.5, "color": AMBAR}, {"max": 0.001, "color": ROJO}]},
+        "series": [{"type": "heatmap", "data": datos,
+                    "label": {"show": True, "color": "#fff", "fontSize": 15, "fontWeight": 800,
+                              "formatter": JS("function(p){return Math.round(p.value[2]*100)+'%';}")},
+                    "itemStyle": {"borderRadius": 10, "borderColor": "#0f172a", "borderWidth": 5, "opacity": 0.92},
+                    "emphasis": {"itemStyle": {"shadowBlur": 20, "shadowColor": "rgba(255,255,255,0.4)"}},
+                    "animationDelay": JS("function(i){return i * 35;}"), "animationDuration": 700}],
+    }
+    echart(opcion, 70 + 60 * len(filas), titulo, subtitulo)
 
 
-def pertenencia(candidatos, atrib, grados, u, t, etiqueta):
-    """Función de pertenencia en rampa con los candidatos ubicados sobre ella."""
+def pertenencia(candidatos, atrib, grados, u, t, etiqueta, titulo, subtitulo=""):
+    """Rampa difusa vs. escalón clásico, con la foto de cada candidato sobre la curva."""
     xs = [c[atrib] for c in candidatos]
     lo, hi = min(min(xs), u - t) - 1, max(max(xs), u) + 1
-    xx = np.linspace(lo, hi, 200)
-    fig = go.Figure()
-    fig.add_vrect(x0=u - t, x1=u, fillcolor="rgba(79,70,229,0.06)", line_width=0,
-                  annotation_text="zona de tolerancia", annotation_position="top left",
-                  annotation_font=dict(size=10, color=SUAVE))
-    fig.add_scatter(x=xx, y=np.clip((xx - (u - t)) / t, 0, 1), mode="lines", name="Grado (lógica difusa)",
-                    line=dict(color=MARCA, width=3.5, shape="linear"), hoverinfo="skip")
-    fig.add_scatter(x=[lo, u, u, hi], y=[0, 0, 1, 1], mode="lines", name="Filtro clásico (todo o nada)",
-                    line=dict(color="#94a3b8", width=2, dash="dot", shape="hv"), hoverinfo="skip")
+    grupos = {}
     for c in candidatos:
+        grupos.setdefault(c[atrib], []).append(c["id"])
+    puntos = []
+    for c in candidatos:
+        grupo = grupos[c[atrib]]
+        desplaz = (grupo.index(c["id"]) - (len(grupo) - 1) / 2) * 44  # separa a quienes tienen el mismo valor
         g = grados[c["id"]]
-        fig.add_scatter(x=[c[atrib]], y=[g], mode="markers", name=c["nombre"], showlegend=False,
-                        marker=dict(size=13, color=c["color"], line=dict(color="white", width=2)),
-                        hovertemplate=f"<b>{c['nombre']}</b><br>{etiqueta}: {c[atrib]}<br>Grado: {g:.0%}<extra></extra>")
-    grupos = {}  # candidatos con el mismo valor comparten una sola etiqueta
-    for c in candidatos:
-        grupos.setdefault(c[atrib], []).append(c["nombre"].split()[-1])
-    for i, (x, ns) in enumerate(sorted(grupos.items())):
-        arriba = i % 2 == 0
-        fig.add_annotation(x=x, y=float(np.clip((x - (u - t)) / t, 0, 1)), text="<br>".join(ns), showarrow=False,
-                           yshift=(16 + 7 * (len(ns) - 1)) * (1 if arriba else -1), font=dict(size=10, color="#334155"))
-    fig.update_yaxes(range=[-0.25, 1.3], tickformat=".0%", title="Grado de cumplimiento")
-    fig.update_xaxes(title=etiqueta)
-    return estilo(fig, 470)
+        puntos.append({"value": [c[atrib], g], "symbol": "image://" + foto_circular(c["id"]),
+                       "symbolOffset": [desplaz, 0],
+                       "tip": f"<b>{c['nombre']}</b><br>{etiqueta}: {c[atrib]}<br>Grado de cumplimiento: <b>{g:.0%}</b>"})
+    opcion = {
+        "legend": {**LEYENDA, "data": ["Lógica difusa (grado)", "Filtro clásico (todo o nada)"]},
+        "tooltip": TOOLTIP_DATOS,
+        "grid": {"left": 10, "right": 30, "top": 60, "bottom": 36, "containLabel": True},
+        "xAxis": eje_valor(min=round(lo, 1), max=round(hi, 1), name=etiqueta, nameLocation="middle", nameGap=28),
+        "yAxis": eje_valor(min=0, max=1.25, interval=0.25,
+                           axisLabel={"color": TEXTO_SUAVE,
+                                      "formatter": JS("function(v){return v>1?'':Math.round(v*100)+'%';}")}),
+        "series": [
+            {"name": "Lógica difusa (grado)", "type": "line", "data": [[lo, 0], [u - t, 0], [u, 1], [hi, 1]],
+             "symbol": "none", "itemStyle": {"color": VERDE},
+             "lineStyle": {"width": 5, "color": degradado(AMBAR, VERDE), "shadowBlur": 16, "shadowColor": alpha(VERDE, 0.6)},
+             "areaStyle": {"color": degradado(alpha(VERDE, 0.35), alpha(VERDE, 0.0), vertical=True)},
+             "markArea": {"silent": True, "itemStyle": {"color": "rgba(245,158,11,0.08)"},
+                          "label": {"color": AMBAR, "fontSize": 12},
+                          "data": [[{"name": "zona de tolerancia", "xAxis": u - t}, {"xAxis": u}]]},
+             "animationDuration": 1800, "z": 2},
+            {"name": "Filtro clásico (todo o nada)", "type": "line", "step": "end",
+             "data": [[lo, 0], [u, 1], [hi, 1]], "symbol": "none", "itemStyle": {"color": TEXTO_SUAVE},
+             "lineStyle": {"width": 2, "type": "dashed", "color": TEXTO_SUAVE}, "z": 1},
+            {"type": "scatter", "data": puntos, "symbolSize": 44, "z": 5,
+             "animationDelay": JS("function(i){return 1200 + i * 120;}"), "animationEasing": "backOut"},
+        ],
+    }
+    echart(opcion, 440, titulo, subtitulo)
 
 
-def convergencia_animada(hist, optimo):
-    """Convergencia del AG con botón de reproducción: se ve cómo evoluciona generación a generación."""
-    G = len(hist["mejor"])
-    gens = list(range(1, G + 1))
-    mejor, prom = hist["mejor"], hist["promedio"]
-    y0, y1 = min(prom) - 0.05, optimo + 0.05
-
-    def trazas(k):
-        return [go.Scatter(x=gens[:k], y=mejor[:k]), go.Scatter(x=gens[:k], y=prom[:k])]
-
-    fig = go.Figure()
-    fig.add_scatter(x=gens, y=mejor, name="Mejor individuo", line=dict(color=MARCA, width=3),
-                    hovertemplate="Generación %{x}<br>Mejor: %{y:.4f}<extra></extra>")
-    fig.add_scatter(x=gens, y=prom, name="Promedio de la población", line=dict(color=MARCA_2, width=2, dash="dash"),
-                    fill="tonexty", fillcolor="rgba(14,165,233,0.06)",
-                    hovertemplate="Generación %{x}<br>Promedio: %{y:.4f}<extra></extra>")
-    fig.add_scatter(x=[1, G], y=[optimo, optimo], name="Óptimo (búsqueda exhaustiva)", mode="lines",
-                    line=dict(color=OK, width=1.5, dash="dot"), hoverinfo="skip")
-    paso = max(1, G // 60)
-    fig.frames = [go.Frame(data=trazas(k), traces=[0, 1], name=str(k)) for k in list(range(1, G + 1, paso)) + [G]]
-    fig.update_layout(
-        hovermode="x unified",
-        updatemenus=[dict(type="buttons", direction="left", x=0, y=1.16, xanchor="left", yanchor="top",
-                          pad=dict(r=6, t=0), showactive=False, bgcolor="white", bordercolor=LINEA,
-                          buttons=[dict(label="▶ Reproducir evolución", method="animate",
-                                        args=[None, dict(frame=dict(duration=45, redraw=False), fromcurrent=False,
-                                                         transition=dict(duration=0), mode="immediate")]),
-                                   dict(label="❚❚ Pausa", method="animate",
-                                        args=[[None], dict(frame=dict(duration=0, redraw=False), mode="immediate")])])])
-    fig.update_xaxes(range=[0.5, G + 0.5], ticksuffix="  ", tickprefix="gen ")
-    fig.update_yaxes(title="Fitness", range=[y0, y1])
-    fig = estilo(fig, 500)
-    fig.update_layout(margin=dict(t=52, b=8), legend=dict(yanchor="top", y=-0.12))
-    return fig
+# ---------------------------------------------------------------- página 4
+def convergencia(hist, optimo, titulo, subtitulo=""):
+    """La línea del mejor individuo se dibuja sola, generación a generación."""
+    gens = list(range(1, len(hist["mejor"]) + 1))
+    opcion = {
+        "legend": {**LEYENDA, "data": ["Mejor individuo", "Promedio de la población"]},
+        "tooltip": {"trigger": "axis", "valueFormatter": JS("function(v){return v.toFixed(4);}")},
+        "grid": {"left": 10, "right": 20, "top": 50, "bottom": 40, "containLabel": True},
+        "dataZoom": [{"type": "inside"}],
+        "xAxis": eje_categoria(gens, boundaryGap=False, name="Generación", nameLocation="middle", nameGap=28,
+                               axisLabel={"color": TEXTO_SUAVE}, nameTextStyle={"color": TEXTO_SUAVE}),
+        "yAxis": eje_valor(min=round(min(hist["promedio"]) - 0.05, 2), max=round(optimo + 0.05, 2), scale=True),
+        "series": [
+            {"name": "Mejor individuo", "type": "line", "data": [round(v, 4) for v in hist["mejor"]], "showSymbol": False,
+             "smooth": 0.3, "itemStyle": {"color": VERDE},
+             "lineStyle": {"width": 4, "color": degradado(TURQUESA, VERDE), "shadowBlur": 18, "shadowColor": alpha(VERDE, 0.6)},
+             "areaStyle": {"color": degradado(alpha(VERDE, 0.30), alpha(VERDE, 0.0), vertical=True)},
+             "markLine": {"silent": True, "symbol": "none", "lineStyle": {"color": AMBAR, "type": "dashed", "width": 2},
+                          "label": {"formatter": "óptimo global", "color": AMBAR, "position": "insideEndTop"},
+                          "data": [{"yAxis": round(optimo, 4)}]},
+             "animationDuration": 3500, "animationEasing": "linear"},
+            {"name": "Promedio de la población", "type": "line", "data": [round(v, 4) for v in hist["promedio"]],
+             "showSymbol": False, "smooth": 0.3, "itemStyle": {"color": AZUL_CLARO},
+             "lineStyle": {"width": 2, "type": "dashed", "color": AZUL_CLARO},
+             "animationDuration": 3500, "animationEasing": "linear"},
+        ],
+    }
+    echart(opcion, 400, titulo, subtitulo)
 
 
-def matriz_pagos(pagos, nash):
-    """Matriz Intel vs. NVIDIA como heatmap: color = pago de Intel; recuadro verde = equilibrio de Nash."""
-    z = [[pagos[(s, n)][0] for n in EST_NVIDIA] for s in EST_INTEL]
-    texto = [[f"<b>{pagos[(s, n)][0]:.2f}</b> , {pagos[(s, n)][1]}" for n in EST_NVIDIA] for s in EST_INTEL]
-    fig = go.Figure(go.Heatmap(
-        z=z, x=EST_NVIDIA, y=EST_INTEL, colorscale=[[0, "#eef2ff"], [1, "#818cf8"]], showscale=False, xgap=5, ygap=5,
-        text=texto, texttemplate="%{text}", textfont=dict(size=18, color=TINTA),
-        customdata=[[pagos[(s, n)][1] for n in EST_NVIDIA] for s in EST_INTEL],
-        hovertemplate="Intel: <b>%{y}</b><br>NVIDIA: <b>%{x}</b><br>Pago Intel: %{z:.2f}<br>"
-                      "Pago NVIDIA: %{customdata}<extra></extra>"))
-    nash_set = {(s, n) for s, n, *_ in nash}
-    for i, s in enumerate(EST_INTEL):
-        for j, n in enumerate(EST_NVIDIA):
-            if (s, n) in nash_set:
-                fig.add_shape(type="rect", x0=j - 0.47, x1=j + 0.47, y0=i - 0.45, y1=i + 0.45,
-                              line=dict(color=OK, width=3), fillcolor="rgba(0,0,0,0)")
-                fig.add_annotation(x=j, y=i - 0.3, text="Nash", showarrow=False, font=dict(size=10, color="#047857"))
-    fig.update_yaxes(autorange="reversed", showgrid=False, title="Intel")
-    fig.update_xaxes(side="top", showgrid=False, title="NVIDIA", tickangle=0, tickfont=dict(size=14))
-    fig.update_yaxes(tickfont=dict(size=14))
-    return estilo(fig, 420, leyenda=False)
-
-
-def arbol_minimax(mm):
-    """Árbol Intel (MAX) → NVIDIA (MIN) → AMD (MIN). Ramas podadas en gris punteado; hover con la explicación."""
-    hoja_x = lambda i, j, k: i * 4 + j * 2 + k
-    nodos, aristas = [], []  # nodo: (x, y, etiqueta, valor, estado, hover)
-    raiz_x = 5.5
-    nodos.append((raiz_x, 3, "Intel", mm["valor"], "raiz",
-                  f"<b>Intel (MAX)</b><br>Valor garantizado: {mm['valor']:.2f}<br>Elige: {mm['jugada']}"))
-    for i, s in enumerate(EST_INTEL):
-        sx = (hoja_x(i, 0, 0) + hoja_x(i, 1, 1)) / 2
-        ev = s in mm["intel"]
-        estado = "mejor" if s == mm["jugada"] else ("ok" if ev else "podado")
-        nodos.append((sx, 2, s[:2], mm["intel"].get(s), estado,
-                      f"<b>{s}</b><br>" + (f"Lo peor que le puede pasar a Intel: {mm['intel'][s]:.2f}" if ev else "Podado")))
-        aristas.append((raiz_x, 3, sx, 2, ev))
-        for j, n in enumerate(EST_NVIDIA):
-            nx = (hoja_x(i, j, 0) + hoja_x(i, j, 1)) / 2
-            ev2 = (s, n) in mm["nvidia"]
-            nodos.append((nx, 1, n[:2], mm["nvidia"].get((s, n)), "min" if ev2 else "podado",
-                          f"<b>{s} → {n}</b><br>" + (f"Valor tras la respuesta de AMD: {mm['nvidia'][(s, n)]:.2f}"
-                                                     if ev2 else "Rama podada: Intel ya tenía una opción mejor")))
-            aristas.append((sx, 2, nx, 1, ev2))
-            for k, a in enumerate(EST_AMD):
-                lx = hoja_x(i, j, k)
-                ev3 = (s, n, a) in mm["hojas"]
-                nodos.append((lx, 0, a[:2], mm["hojas"].get((s, n, a)), "hoja" if ev3 else "podado",
-                              f"<b>{s} → {n} → {a}</b><br>" + (f"Pago de Intel: {mm['hojas'][(s, n, a)]:.2f}"
-                                                               if ev3 else "Hoja podada: no hizo falta evaluarla")))
-                aristas.append((nx, 1, lx, 0, ev3))
-
-    fig = go.Figure()
-    for ok in (False, True):
-        xs, ys = [], []
-        for x0, y0, x1, y1, ev in aristas:
-            if ev == ok:
-                xs += [x0, x1, None]
-                ys += [y0, y1, None]
-        fig.add_scatter(x=xs, y=ys, mode="lines", hoverinfo="skip", showlegend=False,
-                        line=dict(color="#94a3b8" if ok else "#d6dbe4", width=1.8 if ok else 1.2, dash=None if ok else "dot"))
-    colores = {"raiz": MARCA, "mejor": OK, "ok": "#64748b", "min": MAL, "hoja": "#334155", "podado": "#cbd5e1"}
-    for estado in colores:
-        sel = [n for n in nodos if n[4] == estado]
-        if not sel:
-            continue
-        hoja = estado in ("hoja",) or (estado == "podado")
-        fig.add_scatter(
-            x=[n[0] for n in sel], y=[n[1] for n in sel], mode="markers+text", showlegend=False,
-            marker=dict(size=[58 if n[1] > 0 else 50 for n in sel], symbol=["square" if n[1] == 0 else "circle" for n in sel],
-                        color=["white" if estado == "podado" else _alpha(colores[estado], 0.12) for _ in sel],
-                        line=dict(color=colores[estado], width=2 if estado != "podado" else 1.2)),
-            text=[(f"{n[2]}<br>{n[3]:.2f}" if n[3] is not None else f"{n[2]}<br>✂") for n in sel],
-            textfont=dict(size=12 if hoja else 14, color="#94a3b8" if estado == "podado" else TINTA),
-            hovertemplate="%{customdata}<extra></extra>", customdata=[n[5] for n in sel])
-    for y, txt, col in ((3, "MAX · Intel", MARCA), (2, "Estrategia de Intel", "#64748b"), (1, "MIN · NVIDIA", MAL),
-                        (0, "MIN · AMD", MAL)):
-        fig.add_annotation(x=-1.3, y=y, text=f"<b>{txt}</b>", showarrow=False, xanchor="right",
-                           font=dict(size=14, color=col))
-    fig.update_xaxes(visible=False, range=[-4.2, 11.8])
-    fig.update_yaxes(visible=False, range=[-0.55, 3.5])
-    return estilo(fig, 540, leyenda=False)
-
-
-def decision(fin, pesos):
-    fig = go.Figure()
-    for clave, nombre, color in (("ag", f"Algoritmo genético ({pesos['ag']:.0%})", MARCA),
-                                 ("minimax", f"Minimax ({pesos['minimax']:.0%})", VIOLETA),
-                                 ("disponibilidad", f"Disponibilidad ({pesos['disponibilidad']:.0%})", OK)):
-        fig.add_bar(y=[c["nombre"] for c in fin], x=[c["aporte"][clave] for c in fin], name=nombre, orientation="h",
-                    marker=dict(color=color, cornerradius=4),
-                    hovertemplate="<b>%{y}</b><br>" + nombre + ": %{x:.3f}<extra></extra>")
-    for c in fin:
-        fig.add_annotation(x=c["puntaje"], y=c["nombre"], text=f"<b>{c['puntaje']:.3f}</b>", showarrow=False,
-                           xanchor="left", xshift=8, font=dict(color=TINTA, size=16))
-        fig.add_layout_image(source=foto_circular(c["id"]), x=c["puntaje"] + 0.1, y=c["nombre"], xref="x", yref="y",
-                             sizex=0.2, sizey=0.75, xanchor="left", yanchor="middle", sizing="contain")
-    fig.update_layout(barmode="stack")
-    fig.update_yaxes(autorange="reversed")
-    fig.update_xaxes(title="Puntaje final", range=[0, 1.25])
-    fig.update_yaxes(tickfont=dict(size=15, color=TINTA))
-    return estilo(fig, 160 + 80 * len(fin))
-
-
-def brecha_intel_nvidia():
-    cats = ["Ingresos del trimestre (US$ B)", "Margen bruto (%)"]
-    fig = go.Figure()
-    fig.add_bar(name="Intel", x=cats, y=[16.1, 40.4], marker=dict(color=MARCA, cornerradius=6),
-                text=["16,1", "40,4 %"], textposition="outside", hovertemplate="Intel · %{x}: %{y}<extra></extra>")
-    fig.add_bar(name="NVIDIA", x=cats, y=[96.2, 75.0], marker=dict(color="#94a3b8", cornerradius=6),
-                text=["96,2", "75 %"], textposition="outside", hovertemplate="NVIDIA · %{x}: %{y}<extra></extra>")
-    fig.update_layout(bargap=0.35)
-    fig.update_yaxes(range=[0, 112], visible=False)
-    fig.update_xaxes(tickfont=dict(size=15, color=TINTA))
-    fig.update_traces(textfont=dict(size=18))
-    return estilo(fig, 420)
-
-
-def barras_pesos(etiquetas, valores, color):
-    fig = go.Figure(go.Bar(
-        y=etiquetas, x=[v * 100 for v in valores], orientation="h", marker=dict(color=color, cornerradius=5),
-        text=[f"{v * 100:.0f}%" for v in valores], textposition="outside",
-        hovertemplate="%{y}: %{x:.1f}%<extra></extra>"))
-    fig.update_yaxes(autorange="reversed")
-    fig.update_xaxes(range=[0, max(valores) * 130], ticksuffix="%")
-    fig.update_yaxes(tickfont=dict(size=15, color=TINTA))
-    return estilo(fig, 420, leyenda=False)
-
-
-def mandato(plan, prioridades):
-    """Mandato de 100 días del CEO (reparto de su foco) frente a la prioridad que el analista dio a cada frente."""
-    total = sum(plan.values()) or 1
+def mandato(plan, prioridades, titulo, subtitulo=""):
+    """Cada frente es una batería de 3 celdas que se llena según la intensidad del mandato."""
     etiquetas = [FR_LBL[f] for f in FRENTES]
-    fig = go.Figure()
-    fig.add_bar(y=etiquetas, x=[prioridades[f] * 100 for f in FRENTES], name="Prioridad para Intel", orientation="h",
-                marker=dict(color="#cbd5e1", cornerradius=5), hovertemplate="%{y}: prioridad %{x:.0f}%<extra></extra>")
-    fig.add_bar(y=etiquetas, x=[plan[f] / total * 100 for f in FRENTES], name="Foco del nuevo CEO", orientation="h",
-                marker=dict(color=MARCA, cornerradius=5), customdata=[plan[f] for f in FRENTES],
-                hovertemplate="%{y}: %{x:.0f}% del foco (intensidad %{customdata}/3)<extra></extra>")
-    fig.update_layout(barmode="group", bargap=0.25, bargroupgap=0.08)
-    fig.update_yaxes(autorange="reversed", tickfont=dict(size=15, color=TINTA))
-    fig.update_xaxes(ticksuffix="%")
-    return estilo(fig, 460)
+    colores = [alpha(TURQUESA, 0.75), TURQUESA, VERDE]
+    series = [{"type": "bar", "data": [3] * len(FRENTES), "barWidth": 30, "barGap": "-100%", "silent": True,
+               "itemStyle": {"color": "rgba(148,163,184,0.08)", "borderRadius": 8}, "z": 1, "animation": False}]
+    for k in range(3):
+        series.append({
+            "type": "bar", "stack": "foco", "barWidth": 30, "z": 2,
+            "data": [{"value": 1 if plan[f] > k else 0,
+                      "tip": f"<b>{FR_LBL[f]}</b><br>Intensidad del mandato: {plan[f]}/3<br>Prioridad para Intel: "
+                             f"{prioridades[f] * 100:.0f}%"} for f in FRENTES],
+            "itemStyle": {"color": colores[k], "borderColor": "#0f172a", "borderWidth": 4, "borderRadius": 8,
+                          "shadowBlur": 12, "shadowColor": alpha(VERDE, 0.5)},
+            "animationDelay": JS(f"function(i){{return {k} * 450 + i * 90;}}"), "animationDuration": 450})
+    opcion = {
+        "tooltip": TOOLTIP_DATOS,
+        "grid": {"left": 10, "right": 10, "top": 10, "bottom": 10, "containLabel": True},
+        "xAxis": eje_valor(max=3, show=False),
+        "yAxis": [eje_categoria(etiquetas, inverse=True, axisLine={"show": False},
+                                axisLabel={"color": TEXTO, "fontSize": 15, "fontWeight": 600}),
+                  eje_categoria([f"prioridad {prioridades[f] * 100:.0f}%" for f in FRENTES], inverse=True,
+                                position="right", axisLine={"show": False},
+                                axisLabel={"color": AMBAR, "fontSize": 13, "fontWeight": 700})],
+        "series": series,
+    }
+    echart(opcion, 380, titulo, subtitulo)
+
+
+# ---------------------------------------------------------------- página 5
+def matriz_pagos(pagos, nash, titulo, subtitulo=""):
+    nash_set = {(s, n) for s, n, *_ in nash}
+    datos = []
+    for i, s in enumerate(EST_INTEL):
+        for j, n in enumerate(EST_NVIDIA):
+            ui, un = pagos[(s, n)]
+            es = (s, n) in nash_set
+            datos.append({"value": [j, i, round(ui, 2)], "un": un,
+                          "tip": f"Intel: <b>{s}</b><br>NVIDIA: <b>{n}</b><br>Pago Intel: {ui:.2f} · Pago NVIDIA: {un}"
+                                 + ("<br><b style='color:#76B900'>Equilibrio de Nash</b>" if es else ""),
+                          **({"itemStyle": {"borderColor": VERDE, "borderWidth": 4, "shadowBlur": 22,
+                                            "shadowColor": alpha(VERDE, 0.7)}} if es else {})})
+    opcion = {
+        "tooltip": TOOLTIP_DATOS,
+        "grid": {"left": 10, "right": 10, "top": 40, "bottom": 10, "containLabel": True},
+        "xAxis": eje_categoria(EST_NVIDIA, position="top", axisLine={"show": False},
+                               axisLabel={"color": TEXTO, "fontSize": 14, "fontWeight": 700}),
+        "yAxis": eje_categoria(EST_INTEL, inverse=True, axisLine={"show": False},
+                               axisLabel={"color": TEXTO, "fontSize": 14, "fontWeight": 700}),
+        "visualMap": {"show": False, "min": 4, "max": 10, "dimension": 2,
+                      "inRange": {"color": ["#13233f", AZUL, AZUL_CLARO]}},
+        "series": [{"type": "heatmap", "data": datos,
+                    "label": {"show": True, "fontSize": 20, "fontWeight": 800, "color": "#fff",
+                              "formatter": JS("function(p){return p.value[2].toFixed(2)+'  ,  '+p.data.un;}")},
+                    "itemStyle": {"borderRadius": 14, "borderColor": "#0f172a", "borderWidth": 6},
+                    "animationDelay": JS("function(i){return i * 150;}")}],
+    }
+    echart(opcion, 360, titulo, subtitulo)
+
+
+def arbol_minimax(mm, titulo, subtitulo=""):
+    """Árbol Intel (MAX) → NVIDIA (MIN) → AMD (MIN); las ramas podadas aparecen apagadas y punteadas."""
+    apagado = {"color": "#1e293b", "borderColor": "#475569", "borderType": "dashed"}
+
+    def nodo(nombre, valor, estilo, tip, hijos=None, podado=False):
+        return {"name": nombre if valor is None else f"{nombre}\n{valor:.2f}", "tip": tip,
+                "itemStyle": apagado if podado else estilo,
+                "label": {"color": "#64748b" if podado else "#fff"},
+                "lineStyle": {"type": "dashed", "color": "#334155", "width": 1} if podado else {},
+                "children": hijos or []}
+
+    hijos_intel = []
+    for s in EST_INTEL:
+        hijos_n = []
+        for n in EST_NVIDIA:
+            hojas = []
+            for a in EST_AMD:
+                v = mm["hojas"].get((s, n, a))
+                hojas.append(nodo(a[:2], v, {"color": "#334155", "borderColor": TEXTO_SUAVE},
+                                  f"<b>{s} → {n} → {a}</b><br>" + (f"Pago de Intel: {v:.2f}" if v is not None else "Hoja podada"),
+                                  podado=v is None))
+            v2 = mm["nvidia"].get((s, n))
+            hijos_n.append(nodo(n[:2], v2, {"color": alpha(ROJO, 0.35), "borderColor": ROJO},
+                                f"<b>{s} → {n}</b><br>" + (f"Lo peor tras la respuesta de AMD: {v2:.2f}"
+                                                           if v2 is not None else "Rama podada"),
+                                hojas, podado=v2 is None))
+        v1 = mm["intel"].get(s)
+        estilo = ({"color": alpha(VERDE, 0.45), "borderColor": VERDE, "shadowBlur": 20, "shadowColor": VERDE}
+                  if s == mm["jugada"] else {"color": "#1e3a5f", "borderColor": AZUL_CLARO})
+        hijos_intel.append(nodo(s[:2], v1, estilo,
+                                f"<b>{s}</b><br>Lo mínimo garantizado: {v1:.2f}" if v1 is not None else "Podado",
+                                hijos_n, podado=v1 is None))
+    raiz = nodo("Intel", mm["valor"], {"color": AZUL, "borderColor": AZUL_CLARO, "shadowBlur": 24, "shadowColor": AZUL_CLARO},
+                f"<b>Intel (MAX)</b><br>Valor garantizado: {mm['valor']:.2f}<br>Elige: {mm['jugada']}", hijos_intel)
+    opcion = {
+        "tooltip": TOOLTIP_DATOS,
+        "series": [{"type": "tree", "data": [raiz], "orient": "TB", "top": 40, "bottom": 40, "left": 90, "right": 30,
+                    "symbol": "circle", "symbolSize": 50, "expandAndCollapse": False, "initialTreeDepth": -1,
+                    "edgeShape": "polyline", "edgeForkPosition": "55%",
+                    "lineStyle": {"color": "#64748b", "width": 2, "curveness": 0},
+                    "label": {"position": "inside", "fontSize": 12, "fontWeight": 700, "lineHeight": 14},
+                    "leaves": {"label": {"position": "inside"}},
+                    "animationDuration": 900, "animationDurationUpdate": 600}],
+        "graphic": [{"type": "text", "left": 0, "top": t, "style": {"text": txt, "fill": col, "font": "700 13px sans-serif"}}
+                    for t, txt, col in ((32, "MAX · Intel", AZUL_CLARO), (155, "Estrategia", TEXTO_SUAVE),
+                                        (278, "MIN · NVIDIA", ROJO), (402, "MIN · AMD", ROJO))],
+    }
+    echart(opcion, 470, titulo, subtitulo)
+
+
+# ---------------------------------------------------------------- página 6
+def decision(fin, pesos, titulo, subtitulo=""):
+    """Barras apiladas con una textura distinta por componente; al final, la foto y el puntaje."""
+    nombres = [c["nombre"] for c in fin]
+    texturas = {
+        "ag": {"symbol": "rect", "dashArrayX": [1, 0], "dashArrayY": [3, 6], "rotation": -0.7,
+               "color": "rgba(255,255,255,0.18)"},
+        "minimax": {"symbol": "circle", "symbolSize": 0.7, "dashArrayX": [[3, 5]], "dashArrayY": [5],
+                    "color": "rgba(255,255,255,0.22)"},
+        "disponibilidad": {"symbol": "rect", "dashArrayX": [1, 0], "dashArrayY": [2, 4], "rotation": 0,
+                           "color": "rgba(255,255,255,0.15)"},
+    }
+    series = []
+    for clave, nombre, color in (("ag", f"Algoritmo genético ({pesos['ag']:.0%})", VERDE),
+                                 ("minimax", f"Minimax ({pesos['minimax']:.0%})", VIOLETA),
+                                 ("disponibilidad", f"Disponibilidad ({pesos['disponibilidad']:.0%})", AMBAR)):
+        series.append({"name": nombre, "type": "bar", "stack": "total", "barWidth": "52%",
+                       "data": [{"value": round(c["aporte"][clave], 3),
+                                 "tip": f"<b>{c['nombre']}</b><br>{nombre}: {c['aporte'][clave]:.3f}"} for c in fin],
+                       "itemStyle": {"color": degradado(alpha(color, 0.7), color), "decal": texturas[clave],
+                                     "borderColor": "#0f172a", "borderWidth": 2, "borderRadius": 6},
+                       "animationDelay": JS("function(i){return i * 200;}"), "animationDuration": 1200})
+    series.append({"type": "scatter", "z": 5, "symbolSize": 62, "symbolOffset": [40, 0],
+                   "data": [{"value": [round(c["puntaje"], 3), c["nombre"]], "symbol": "image://" + foto_circular(c["id"]),
+                             "tip": f"<b>{c['nombre']}</b><br>Puntaje final: {c['puntaje']:.3f}",
+                             "label": {"show": True, "position": "right", "distance": 46, "formatter": f"{c['puntaje']:.3f}",
+                                       "color": "#fff", "fontSize": 20, "fontWeight": 800}} for c in fin],
+                   "animationDelay": JS("function(i){return 1100 + i * 200;}"), "animationEasing": "backOut"})
+    opcion = {
+        "legend": {**LEYENDA, "data": [s["name"] for s in series if "name" in s]},
+        "tooltip": TOOLTIP_DATOS,
+        "grid": {"left": 10, "right": 10, "top": 50, "bottom": 30, "containLabel": True},
+        "xAxis": eje_valor(min=0, max=1.35, name="Puntaje final", nameLocation="middle", nameGap=26),
+        "yAxis": eje_categoria(nombres, inverse=True, axisLine={"show": False},
+                               axisLabel={"color": TEXTO, "fontSize": 16, "fontWeight": 700}),
+        "series": series,
+    }
+    echart(opcion, 130 + 90 * len(fin), titulo, subtitulo)
+
+
+# ---------------------------------------------------------------- bitácora
+def rutas_sprint1(solucion, ubicaciones, titulo, subtitulo=""):
+    """Rutas A* con un punto luminoso que recorre cada ruta."""
+    colores = {"Base_Norte": AZUL_CLARO, "Base_Centro": VERDE, "Base_Sur": AMBAR}
+    series = []
+    for base, s in solucion.items():
+        nombre = base.replace("_", " ")
+        coords = [list(ubicaciones[n]) for n in s["ruta"]]
+        series.append({"name": nombre, "type": "lines", "coordinateSystem": "cartesian2d", "polyline": True,
+                       "data": [{"coords": coords}], "lineStyle": {"color": colores[base], "width": 3, "opacity": 0.75},
+                       "effect": {"show": True, "period": 5, "trailLength": 0.35, "symbol": "circle", "symbolSize": 9,
+                                  "color": "#fff"}, "tooltip": {"show": False}})
+        info = ["Salida 08:00"] + [f"{i}. {p['lugar']} · {p['hora']}" for i, p in enumerate(s["pasos"], start=1)]
+        series.append({"name": nombre, "type": "scatter", "symbolSize": 14,
+                       "itemStyle": {"color": colores[base], "borderColor": "#fff", "borderWidth": 2,
+                                     "shadowBlur": 12, "shadowColor": colores[base]},
+                       "data": [{"value": c, "tip": f"<b>{nombre}</b><br>{t}"} for c, t in zip(coords, info)]})
+    series.append({"type": "scatter", "symbolSize": 1, "silent": True, "itemStyle": {"color": "transparent"},
+                   "label": {"show": True, "position": "top", "color": TEXTO_SUAVE, "fontSize": 12, "distance": 10,
+                             "formatter": JS("function(p){return p.data.n;}")},
+                   "data": [{"value": list(v), "n": k.split("_", 1)[1]} for k, v in ubicaciones.items()]})
+    opcion = {
+        "legend": {**LEYENDA, "data": [b.replace("_", " ") for b in solucion]},
+        "tooltip": TOOLTIP_DATOS,
+        "grid": {"left": 10, "right": 20, "top": 50, "bottom": 30, "containLabel": True},
+        "xAxis": eje_valor(name="km  Oeste ← → Este", nameLocation="middle", nameGap=26, min=-5, max=6),
+        "yAxis": eje_valor(name="km  Sur ← → Norte", nameLocation="middle", nameGap=34, min=-12, max=16),
+        "series": series,
+    }
+    echart(opcion, 560, titulo, subtitulo)

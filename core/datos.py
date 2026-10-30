@@ -27,7 +27,8 @@ REQ_ATRIB = {
     "min_gobernanza": "gobernanza", "min_transformacion": "transformacion",
 }
 
-COLORES = ["#2563eb", "#059669", "#d97706", "#7c3aed", "#ea580c", "#db2777", "#dc2626"]
+# Paleta "Rivalidad" (Lisa Su, C.C. Wei, Hock Tan, Mehrotra, Amon, Haas, Gelsinger)
+COLORES = ["#EF4444", "#8B5CF6", "#F59E0B", "#14B8A6", "#3B9BF5", "#76B900", "#64748B"]
 
 CANDIDATOS = [
     {"id": "C1", "nombre": "Lisa Su", "cargo": "Presidenta y CEO de AMD (desde 2014)",

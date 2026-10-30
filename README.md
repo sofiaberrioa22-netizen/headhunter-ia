@@ -43,7 +43,8 @@ Community Cloud, en *Settings → Secrets*). Nunca subas la clave al repositorio
 
 Las fotos de los candidatos vienen de Wikimedia Commons con licencias CC BY 2.0, CC BY 4.0 y CC BY-SA 4.0. El autor,
 la licencia y el enlace de cada una están en `assets/candidatos/creditos.json` y al pie de la página de recomendación.
-La ilustración de la portada (la carrera entre NVIDIA e Intel) es un dibujo propio en SVG.
+Las ilustraciones (los edificios de NVIDIA e Intel en la portada y la carrera de chips en la página de competencia)
+son dibujos propios en SVG. Las gráficas usan ECharts, que se carga desde cdn.jsdelivr.net.
 
 ## Uso académico
 

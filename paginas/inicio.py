@@ -1,7 +1,8 @@
 import streamlit as st
 
 from core.datos import CANDIDATOS, INTEGRANTES
-from core.portada import CSS_CARRERA, carrera_img
+from core.edificios import edificios_img
+from core.portada import CSS_CARRERA
 from core.ui import galeria, resultados
 
 res = resultados()
@@ -14,7 +15,7 @@ st.html(
     "<h1>Buscamos al próximo <span>CEO de Intel</span></h1>"
     "<p>NVIDIA tomó la delantera. Un headhunter con inteligencia artificial elige al líder que puede devolver a Intel "
     "a la pelea.</p>"
-    + carrera_img() +
+    + edificios_img() +
     "<div class='res'>"
     f"<div><small>CEO recomendado</small><b>{ceo['nombre'] if ceo else '—'}</b></div>"
     f"<div><small>Plan B</small><b>{plan_b['nombre'] if plan_b else '—'}</b></div>"

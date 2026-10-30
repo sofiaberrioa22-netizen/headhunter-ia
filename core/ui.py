@@ -4,9 +4,6 @@ import json
 from functools import lru_cache
 from pathlib import Path
 
-import pandas  # noqa: F401  se importa una vez aquí para que plotly no lo importe a medias desde dos sesiones
-import plotly.graph_objects as go
-import plotly.io as pio
 import streamlit as st
 
 from core.datos import ANALISIS_REFERENCIA, CRITERIOS, FRENTES
@@ -25,8 +22,9 @@ REQ_KEYS = {"exp_min_ceo_anos": "req_exp", "min_tecnologia": "req_tec",
 
 # Paleta de la app
 TINTA, SUAVE, LINEA = "#0f172a", "#64748b", "#e5e9f2"
-MARCA, MARCA_2 = "#4f46e5", "#0ea5e9"
-OK, ALERTA, MAL, VIOLETA = "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"
+# Paleta "Rivalidad": azul Intel y verde NVIDIA como protagonistas (tonos algo más oscuros para texto sobre blanco)
+MARCA, MARCA_2 = "#0071C5", "#14B8A6"
+OK, ALERTA, MAL, VIOLETA = "#5c9400", "#d97706", "#dc2626", "#8b5cf6"
 
 PASOS = [
     ("paginas/empresa.py", "Entender a Intel"),
@@ -189,42 +187,6 @@ def lista_html(items, color):
     return "<ul class='lst' style='--c:" + color + "'>" + "".join(f"<li>{x}</li>" for x in (items or [])) + "</ul>"
 
 
-# ---------------------------------------------------------------- gráficas
-pio.templates["headhunter"] = go.layout.Template(
-    layout=dict(
-        font=dict(family='"Source Sans", "Source Sans Pro", sans-serif', size=14, color="#334155"),
-        colorway=[MARCA, OK, ALERTA, VIOLETA, MARCA_2, "#ec4899", MAL],
-        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-        hoverlabel=dict(bgcolor="white", bordercolor=LINEA, font=dict(color=TINTA, size=13)),
-        xaxis=dict(gridcolor="#eef1f6", zeroline=False, linecolor=LINEA, ticks=""),
-        yaxis=dict(gridcolor="#eef1f6", zeroline=False, linecolor=LINEA, ticks=""),
-        polar=dict(bgcolor="rgba(0,0,0,0)", radialaxis=dict(gridcolor=LINEA), angularaxis=dict(gridcolor=LINEA)),
-    )
-)
-
-
-def estilo(fig, alto=320, leyenda=True):
-    fig.update_layout(
-        template="headhunter", height=alto, margin=dict(l=8, r=8, t=36, b=8), showlegend=leyenda,
-        # Streamlit reemplaza los fondos transparentes por el gris del tema; las gráficas van sobre tarjetas blancas
-        paper_bgcolor="white", plot_bgcolor="white",
-        legend=dict(orientation="h", yanchor="bottom", y=1.01, x=0, font=dict(size=13)) if leyenda else None,
-    )
-    fig.update_xaxes(automargin=True)
-    fig.update_yaxes(automargin=True)
-    return fig
-
-
-CONFIG_GRAFICA = {"displaylogo": False, "responsive": True,
-                  "modeBarButtonsToRemove": ["lasso2d", "select2d", "autoScale2d"],
-                  "toImageButtonOptions": {"format": "png", "scale": 2}}
-
-
-def grafica(fig, **kw):
-    """Todas las gráficas pasan por aquí: interactivas (zoom, hover, leyenda clicable) y descargables como PNG."""
-    return st.plotly_chart(fig, width="stretch", config=CONFIG_GRAFICA, theme=None, **kw)
-
-
 CSS = """
 <style>
 .block-container {max-width: 1320px; padding-top: 3.2rem; padding-bottom: 4rem;}
@@ -244,25 +206,38 @@ h2 {font-weight: 750 !important;} h3 {font-weight: 700 !important;}
 
 /* ---------- encabezado de página ---------- */
 .ph h1 {font-size: 2.3rem; font-weight: 800; margin: 0.15rem 0 0.35rem; padding: 0; line-height: 1.15;}
-.ph .eyebrow {font-size: 0.74rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #4f46e5;}
+.ph .eyebrow {font-size: 0.74rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #0071C5;}
 .ph p.lead {color: #475569; font-size: 1.05rem; line-height: 1.6; max-width: 820px; margin: 0 0 1.4rem;}
 .stepper {display: flex; gap: 6px; margin-bottom: 1.1rem;}
 .stepper .seg {flex: 1; min-width: 0;}
 .stepper .seg::before {content: ""; display: block; height: 5px; border-radius: 99px; background: #e2e8f0; margin-bottom: 6px;}
-.stepper .seg.done::before {background: #a5b4fc;}
-.stepper .seg.now::before {background: linear-gradient(90deg, #4f46e5, #0ea5e9);}
+.stepper .seg.done::before {background: #7cc4f5;}
+.stepper .seg.now::before {background: linear-gradient(90deg, #0071C5, #14B8A6);}
 .stepper .seg span {display: none;}
 .stepper .seg em {font-style: normal; font-size: 0.72rem; color: #94a3b8; font-weight: 600; white-space: nowrap;
                   overflow: hidden; text-overflow: ellipsis; display: block;}
-.stepper .seg.now em {color: #4f46e5;}
+.stepper .seg.now em {color: #0071C5;}
 @media (max-width: 640px) {.stepper .seg em {display: none;} .ph h1 {font-size: 1.8rem;}}
 
 /* ---------- tarjetas ---------- */
 [data-testid="stVerticalBlockBorderWrapper"], [data-testid="stLayoutWrapper"] > [data-testid="stVerticalBlock"] {
   background: #ffffff; border-radius: 16px !important; border-color: #e5e9f2 !important;
   box-shadow: 0 1px 2px rgba(15,23,42,0.04), 0 6px 20px -12px rgba(15,23,42,0.18);}
-.st-key-cta_siguiente {background: linear-gradient(120deg, #eef2ff 0%, #f0f9ff 100%) !important;
-  border-color: #c7d2fe !important;}
+.st-key-cta_siguiente {background: linear-gradient(120deg, #eff8ff 0%, #f0fdf9 100%) !important;
+  border-color: #bae6fd !important;}
+
+/* ---------- animaciones de entrada ---------- */
+@keyframes subir {from {opacity: 0; transform: translateY(14px);} to {opacity: 1; transform: none;}}
+@keyframes brillo {0%, 100% {box-shadow: 0 6px 20px -14px rgba(15,23,42,0.25);} 50% {box-shadow: 0 10px 28px -12px rgba(0,113,197,0.35);}}
+.kpi, .paso, .galeria .g, .persona, .hero, .win, .ph, iframe {animation: subir .6s cubic-bezier(.2,.8,.2,1) both;}
+.kpis .kpi:nth-child(2), .galeria .g:nth-child(2) {animation-delay: .06s;}
+.kpis .kpi:nth-child(3), .galeria .g:nth-child(3) {animation-delay: .12s;}
+.kpis .kpi:nth-child(4), .galeria .g:nth-child(4) {animation-delay: .18s;}
+.kpis .kpi:nth-child(5), .galeria .g:nth-child(5) {animation-delay: .24s;}
+.galeria .g:nth-child(6) {animation-delay: .30s;} .galeria .g:nth-child(7) {animation-delay: .36s;}
+.galeria .g {transition: transform .2s ease;} .galeria .g:hover {transform: translateY(-4px) scale(1.03);}
+.kpi:hover {animation: brillo 1.6s ease-in-out infinite;}
+iframe {border-radius: 20px;}
 
 /* ---------- KPIs ---------- */
 .kpis {display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 0.2rem 0 1.2rem;}
@@ -291,25 +266,25 @@ ul.lst li::before {content: ""; position: absolute; left: 2px; top: 12px; width:
                    radial-gradient(800px 380px at -10% 120%, rgba(139,92,246,0.45), transparent 60%),
                    linear-gradient(135deg, #0b1437 0%, #1e1b4b 55%, #0c2a4d 100%); color: #e2e8f0;}
 .hero .tag {display: inline-block; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
-            color: #c7d2fe; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.16);
+            color: #bae6fd; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.16);
             padding: 4px 10px; border-radius: 999px;}
 .hero h1 {color: #ffffff !important; font-size: 2.8rem; font-weight: 800; line-height: 1.08; margin: 14px 0 10px; padding: 0;}
-.hero h1 span {background: linear-gradient(90deg, #a5b4fc, #67e8f9); -webkit-background-clip: text; background-clip: text;
+.hero h1 span {background: linear-gradient(90deg, #7cc4f5, #67e8f9); -webkit-background-clip: text; background-clip: text;
                color: transparent;}
 .hero p {color: #cbd5e1; font-size: 1.08rem; line-height: 1.6; max-width: 720px; margin: 0;}
 .hero .res {display: flex; gap: 12px; flex-wrap: wrap; margin-top: 22px;}
 .hero .res div {background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.14); border-radius: 14px;
                 padding: 10px 16px; min-width: 170px;}
-.hero .res small {display: block; font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: #a5b4fc;
+.hero .res small {display: block; font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: #7cc4f5;
                   font-weight: 700;}
 .hero .res b {font-size: 1.2rem; color: #fff;}
 @media (max-width: 640px) {.hero {padding: 26px 20px;} .hero h1 {font-size: 2rem;}}
 
 .paso {background: #fff; border: 1px solid #e5e9f2; border-radius: 16px; padding: 16px 18px; height: 100%;
        transition: transform .15s ease, box-shadow .15s ease; box-shadow: 0 6px 20px -16px rgba(15,23,42,0.3);}
-.paso:hover {transform: translateY(-2px); box-shadow: 0 14px 30px -18px rgba(79,70,229,0.45);}
+.paso:hover {transform: translateY(-2px); box-shadow: 0 14px 30px -18px rgba(0,113,197,0.45);}
 .paso .ic {width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center;
-           font-weight: 800; color: #fff; background: linear-gradient(135deg, #4f46e5, #0ea5e9); margin-bottom: 10px;}
+           font-weight: 800; color: #fff; background: linear-gradient(135deg, #0071C5, #14B8A6); margin-bottom: 10px;}
 .paso .t {font-weight: 700; color: #0f172a; margin-bottom: 4px;}
 .paso .d {font-size: 0.88rem; color: #64748b; line-height: 1.45;}
 
@@ -328,7 +303,7 @@ ul.lst li::before {content: ""; position: absolute; left: 2px; top: 12px; width:
 [data-testid="stMetric"] {background: #fff; border: 1px solid #e5e9f2; border-radius: 14px; padding: 10px 14px;}
 [data-testid="stSidebar"] {border-right: 1px solid #e5e9f2; background: #ffffff;}
 .sb-brand {display: flex; gap: 10px; align-items: center; margin: 0 0 0.4rem;}
-.sb-brand .logo {width: 34px; height: 34px; border-radius: 10px; background: linear-gradient(135deg, #4f46e5, #0ea5e9);
+.sb-brand .logo {width: 34px; height: 34px; border-radius: 10px; background: linear-gradient(135deg, #0071C5, #14B8A6);
                  display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 800;}
 .sb-brand b {display: block; color: #0f172a;} .sb-brand small {color: #64748b;}
 .sb-card {background: #f8fafc; border: 1px solid #e5e9f2; border-radius: 14px; padding: 12px 14px; font-size: 0.88rem;}

@@ -3,7 +3,7 @@ import streamlit as st
 from core import graficas
 from core.datos import ANALISIS_REFERENCIA, CRIT_LBL, CRITERIOS, FR_LBL, FRENTES, REQ_LBL
 from core.llm import construir_prompt, consultar_gemini, extraer_json
-from core.ui import (ALERTA, MAL, MARCA, MARCA_2, OK, REQ_KEYS, cargar_analisis, config, encabezado, grafica, kpis,
+from core.ui import (ALERTA, MAL, MARCA, MARCA_2, OK, REQ_KEYS, cargar_analisis, config, encabezado, kpis,
                      lista_html, siguiente)
 
 encabezado(1, "Analista de la industria", "Entender a Intel",
@@ -21,9 +21,8 @@ kpis([
 ])
 
 izq, der = st.columns([1.5, 1], gap="large")
-with izq.container(border=True):
-    st.markdown("### La brecha con NVIDIA")
-    grafica(graficas.brecha_intel_nvidia())
+with izq:
+    graficas.brecha_intel_nvidia("La brecha con NVIDIA", "Cada oblea apilada son unos US$3.000 M de ingresos")
 with der:
     with st.container(border=True):
         st.markdown(f"<div class='sec' style='color:{MARCA}'>El problema</div>"
@@ -51,8 +50,9 @@ with st.expander("Diagnóstico completo (FODA, CEO actual y anterior)", icon=":m
 st.markdown("## Lo que más pesa en el nuevo CEO")
 cfg = config()
 izq, der = st.columns([1.6, 1], gap="large")
-with izq.container(border=True):
-    grafica(graficas.barras_pesos([CRIT_LBL[k] for k in CRITERIOS], [cfg["pesos"][k] for k in CRITERIOS], MARCA))
+with izq:
+    graficas.barras_pesos([CRIT_LBL[k] for k in CRITERIOS], [cfg["pesos"][k] for k in CRITERIOS],
+                          "Importancia de cada cualidad", "Definida por el analista de IA")
 with der.container(border=True):
     st.markdown(f"<div class='sec' style='color:{MARCA}'>Requisitos mínimos</div>", unsafe_allow_html=True)
     for k, v in cfg["requisitos"].items():

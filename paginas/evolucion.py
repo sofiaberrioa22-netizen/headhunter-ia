@@ -1,9 +1,9 @@
 import pandas as pd
-import plotly.graph_objects as go
 import streamlit as st
 
+from core import graficas
 from core.sprints import BASES, CANDIDATOS_S2, REGLAS_S2, UBICACIONES, VACANTES, evaluar_sprint2, resolver_sprint1
-from core.ui import encabezado, estilo, grafica
+from core.ui import encabezado
 
 encabezado(None, "Bitácora", "Cómo lo construimos", "Cuatro sprints, una técnica de IA en cada uno.")
 
@@ -15,7 +15,7 @@ linea = [
 ]
 cols = st.columns(4)
 for col, (s, t, d) in zip(cols, linea):
-    col.markdown(f"<div class='paso'><div class='ic'>{s[-1]}</div><div class='sec' style='color:#4f46e5'>{s}</div>"
+    col.markdown(f"<div class='paso'><div class='ic'>{s[-1]}</div><div class='sec' style='color:#0071C5'>{s}</div>"
                  f"<div class='t'>{t}</div><div class='d'>{d}</div></div>", unsafe_allow_html=True)
 st.write("")
 
@@ -26,23 +26,8 @@ with t1:
     st.markdown("#### Rutas de supervisión en el Valle de Aburrá")
     st.caption("A* busca la ruta de menor costo f = g + h para cada base, respeta horarios y penaliza visitas predecibles.")
     sol = resolver_sprint1()
-    colores = {"Base_Norte": "#4f46e5", "Base_Centro": "#10b981", "Base_Sur": "#f59e0b"}
-    with st.container(border=True):
-        fig = go.Figure()
-        for base, s in sol.items():
-            xs = [UBICACIONES[n][0] for n in s["ruta"]]
-            ys = [UBICACIONES[n][1] for n in s["ruta"]]
-            info = ["Salida de la base 08:00"] + [
-                f"{i}. {p['lugar']} · {p['hora']}" + (f" · sorpresa {p['sorpresa'].lower()}" if p["sorpresa"] else "")
-                for i, p in enumerate(s["pasos"], start=1)]
-            fig.add_scatter(x=xs, y=ys, mode="lines+markers", name=base.replace("_", " "), customdata=info,
-                            line=dict(color=colores[base], width=2.5), marker=dict(size=10, line=dict(color="white", width=1.5)),
-                            hovertemplate="<b>" + base.replace("_", " ") + "</b><br>%{customdata}<extra></extra>")
-        for n, (x, y) in UBICACIONES.items():
-            fig.add_annotation(x=x, y=y, text=n.split("_", 1)[1], showarrow=False, yshift=14, font=dict(size=12))
-        fig.update_xaxes(title="km (Oeste ← → Este)")
-        fig.update_yaxes(title="km (Sur ← → Norte)", scaleanchor="x")
-        grafica(estilo(fig, 640))
+    graficas.rutas_sprint1(sol, UBICACIONES, "Rutas óptimas de los tres supervisores",
+                           "Cada punto luminoso recorre una ruta · pasa el mouse por las paradas")
     with st.expander("Horario de cada ruta"):
         base = st.radio("Base", BASES, horizontal=True, format_func=lambda b: b.replace("_", " "))
         st.dataframe(pd.DataFrame(sol[base]["pasos"]).rename(columns={

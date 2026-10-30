@@ -4,7 +4,7 @@ from core import graficas
 from core.datos import CANDIDATOS, FR_LBL, FRENTES, FUENTES
 from core.llm import consultar_gemini, extraer_json, prompt_memo
 from core.pipeline import PESOS_DECISION
-from core.ui import (ALERTA, MAL, MARCA, OK, VIOLETA, avatar, config, creditos_fotos, encabezado, galeria, grafica,
+from core.ui import (ALERTA, MAL, MARCA, OK, VIOLETA, avatar, config, creditos_fotos, encabezado, galeria,
                      kpis, lista_html, resultados)
 
 encabezado(6, "Decisión", "Recomendación del headhunter")
@@ -34,16 +34,13 @@ kpis([
      ALERTA if ceo["disponibilidad"] < 0.3 else OK),
 ])
 
-with st.container(border=True):
-    st.markdown("### Cómo se decidió")
-    grafica(graficas.decision(fin, PESOS_DECISION))
-    st.caption(f"Puntaje = {PESOS_DECISION['ag']:.0%} algoritmo genético + {PESOS_DECISION['minimax']:.0%} Minimax + "
-               f"{PESOS_DECISION['disponibilidad']:.0%} disponibilidad (normalizados entre finalistas).")
+graficas.decision(fin, PESOS_DECISION, "Cómo se decidió",
+                  f"Puntaje = {PESOS_DECISION['ag']:.0%} algoritmo genético + {PESOS_DECISION['minimax']:.0%} Minimax + "
+                  f"{PESOS_DECISION['disponibilidad']:.0%} disponibilidad (normalizados entre finalistas)")
 
 izq, der = st.columns([1.3, 1], gap="large")
-with izq.container(border=True):
-    st.markdown("### Los finalistas frente a lo que Intel necesita")
-    grafica(graficas.radar(fin, cfg["pesos"]))
+with izq:
+    graficas.radar(fin, cfg["pesos"], "Los finalistas frente a lo que Intel necesita")
 with der:
     tabs = st.tabs([c["nombre"] for c in fin])
     for i, (tab, c) in enumerate(zip(tabs, fin)):

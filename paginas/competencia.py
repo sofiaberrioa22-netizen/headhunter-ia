@@ -1,10 +1,14 @@
 import streamlit as st
 
 from core import graficas
-from core.ui import MARCA, OK, VIOLETA, avatar, encabezado, grafica, kpis, resultados, siguiente
+from core.portada import CSS_CARRERA, carrera_img
+from core.ui import MARCA, OK, VIOLETA, avatar, encabezado, kpis, resultados, siguiente
 
 encabezado(5, "Prueba de estrés", "Reacción de la competencia",
            "NVIDIA y AMD reaccionan. La teoría de juegos mide cuánto le garantiza cada finalista a Intel.")
+
+st.html(CSS_CARRERA + "<div class='hero' style='padding:22px 26px'><span class='tag'>La carrera por el liderazgo "
+        "en IA</span>" + carrera_img() + "</div>")
 
 res = resultados()
 if "finalistas" not in res:
@@ -25,16 +29,13 @@ sel = st.segmented_control("Ver el juego con", nombres, default=nombres[0]) or n
 c = next(x for x in fin if x["nombre"] == sel)
 mm = c["minimax"]
 
-with st.container(border=True):
-    st.markdown(f"### Intel → NVIDIA → AMD con {c['nombre']} · Minimax con poda Alfa-Beta")
-    grafica(graficas.arbol_minimax(mm))
-    st.caption("Pasa el mouse por los nodos. Verde: jugada elegida por Intel. Gris punteado: ramas podadas "
-               f"({12 - len(mm['hojas'])} de 12).")
+graficas.arbol_minimax(mm, f"Intel → NVIDIA → AMD con {c['nombre']}",
+                       f"Minimax con poda Alfa-Beta · verde: jugada elegida · punteado: {12 - len(mm['hojas'])} ramas podadas")
 
 izq, der = st.columns([1.5, 1], gap="large")
-with izq.container(border=True):
-    st.markdown("### Intel vs. NVIDIA · equilibrio de Nash")
-    grafica(graficas.matriz_pagos(c["pagos"], c["nash"]))
+with izq:
+    graficas.matriz_pagos(c["pagos"], c["nash"], "Intel vs. NVIDIA · equilibrio de Nash",
+                          "Pagos (Intel , NVIDIA) · recuadro verde = equilibrio")
 with der:
     kpis([("Valor garantizado", f"{mm['valor']:.2f}", "lo mínimo que Intel asegura", VIOLETA)])
     kpis([("Mejor jugada", mm["jugada"].split(" ", 1)[1], "estrategia Minimax", OK)])
