@@ -22,7 +22,7 @@ kpis([
 
 izq, der = st.columns([1.5, 1], gap="large")
 with izq:
-    graficas.brecha_intel_nvidia("La brecha con NVIDIA", "Cada oblea apilada son unos US$3.000 M de ingresos")
+    graficas.brecha_intel_nvidia("La brecha con NVIDIA", "La altura de cada pila es proporcional a los ingresos del trimestre")
 with der:
     with st.container(border=True):
         st.markdown(f"<div class='sec' style='color:{MARCA}'>El problema</div>"
